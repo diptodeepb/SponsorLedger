@@ -1,0 +1,11 @@
+date,vendor,category,amount_inr,receipt_ref,notes
+2026-09-01,Print House,Printing,4500,RCPT-001,Event banners
+2026-09-02,Campus Catering,Food,8200,RCPT-002,Volunteer meals
+2026-09-03,Unknown Vendor,Logistics,1800,,No receipt reference entered
+2026-09-03,Print House,Printing,4500,RCPT-001,Possible duplicate sample row
+2026-09-10,AV Solutions,Equipment,7500,RCPT-003,Sound system rental
+2026-10-01,Stage Decor Co,Decorations,3200,RCPT-004,Stage backdrop decoration
+2026-10-05,City Transport,Transport,2100,RCPT-005,Guest speaker transfer
+2026-10-10,Goodies Store,Merchandise,5600,RCPT-006,Event t-shirts and caps
+2026-10-12,Online Ads,Marketing,1400,,Social media promotion
+2026-10-15,Security Services,Security,4800,RCPT-007,Event security personnel

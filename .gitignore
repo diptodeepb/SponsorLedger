@@ -13,10 +13,10 @@ develop-eggs/
 dist/
 downloads/
 eggs/
-.eggs/
-lib/
-lib64/
-parts/
+/lib/
+/lib64/
+!frontend/src/lib/
+!frontend/src/lib/**
 sdist/
 var/
 wheels/
@@ -218,3 +218,17 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Frontend dependencies and builds
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Project internal documentation file(s)
+docs/
