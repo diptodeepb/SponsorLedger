@@ -382,28 +382,28 @@ export default function Sponsors() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="card p-4.5 flex items-center justify-between">
           <div>
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Pledged</div>
-            <div className="text-xl font-bold font-mono text-white mt-1">{formatMoney(totalCommitted)}</div>
+            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Pledged</div>
+            <div className="text-xl font-bold font-mono text-slate-900 dark:text-white mt-1">{formatMoney(totalCommitted)}</div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
             <Handshake className="w-5 h-5" />
           </div>
         </div>
         <div className="card p-4.5 flex items-center justify-between">
           <div>
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Received</div>
-            <div className="text-xl font-bold font-mono text-emerald-400 mt-1">{formatMoney(totalReceived)}</div>
+            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Received</div>
+            <div className="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-1">{formatMoney(totalReceived)}</div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
             <CheckCircle2 className="w-5 h-5" />
           </div>
         </div>
         <div className="card p-4.5 flex items-center justify-between">
           <div>
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Outstanding Balance</div>
-            <div className="text-xl font-bold font-mono text-amber-400 mt-1">{formatMoney(totalOutstanding)}</div>
+            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Outstanding Balance</div>
+            <div className="text-xl font-bold font-mono text-amber-600 dark:text-amber-400 mt-1">{formatMoney(totalOutstanding)}</div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
             <Clock className="w-5 h-5" />
           </div>
         </div>
@@ -440,7 +440,7 @@ export default function Sponsors() {
                     onClick={() => setExpandedSponsor(isExpanded ? null : sp.id)}
                   >
                     <div className="flex items-center gap-2.5">
-                      <span className="text-base font-semibold text-white group-hover:text-indigo-300 transition-colors">
+                      <span className="text-base font-semibold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
                         {sp.name}
                       </span>
                       {balance > 0 && <span className="badge badge-medium">balance due</span>}
@@ -448,9 +448,9 @@ export default function Sponsors() {
                       {balance === 0 && <span className="badge badge-completed">paid in full</span>}
                     </div>
                     {sp.contact_label && (
-                      <div className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
                         <span>Contact:</span>
-                        <span className="text-slate-300 font-medium">{sp.contact_label}</span>
+                        <span className="text-slate-700 dark:text-slate-300 font-medium">{sp.contact_label}</span>
                       </div>
                     )}
                   </div>
@@ -458,18 +458,18 @@ export default function Sponsors() {
                   {/* Financial figures */}
                   <div className="flex items-center gap-6 text-sm font-mono">
                     <div className="text-right">
-                      <div className="font-semibold text-white">{formatMoney(sp.committed_paise)}</div>
-                      <div className="text-[11px] text-slate-500 font-sans uppercase tracking-wider">committed</div>
+                      <div className="font-semibold text-slate-900 dark:text-white">{formatMoney(sp.committed_paise)}</div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 font-sans uppercase tracking-wider">committed</div>
                     </div>
                     <div className="text-right">
-                      <div className="font-semibold text-emerald-400">{formatMoney(sp.received_paise)}</div>
-                      <div className="text-[11px] text-slate-500 font-sans uppercase tracking-wider">received</div>
+                      <div className="font-semibold text-emerald-600 dark:text-emerald-400">{formatMoney(sp.received_paise)}</div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 font-sans uppercase tracking-wider">received</div>
                     </div>
                     <div className="text-right min-w-[70px]">
-                      <div className={`font-semibold ${balance > 0 ? 'text-amber-400' : balance < 0 ? 'text-rose-400' : 'text-slate-500'}`}>
-                        {balance !== 0 ? formatMoney(Math.abs(balance)) : '—'}
+                      <div className={`font-semibold ${balance > 0 ? 'text-amber-600 dark:text-amber-400' : balance < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400 dark:text-slate-500'}`}>
+                        {balance !== 0 ? formatMoney(Math.abs(balance)) : <span className="text-xs font-sans text-slate-400 dark:text-slate-500">Settled</span>}
                       </div>
-                      <div className="text-[11px] text-slate-500 font-sans uppercase tracking-wider">
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 font-sans uppercase tracking-wider">
                         {balance > 0 ? 'unpaid' : balance < 0 ? 'extra' : 'settled'}
                       </div>
                     </div>
@@ -502,13 +502,13 @@ export default function Sponsors() {
 
                 {/* Deliverables expandable accordion */}
                 {isExpanded && (
-                  <div className="border-t border-slate-800 bg-slate-950/60 p-5">
+                  <div className="border-t border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-5">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Deliverables for {sp.name} ({spDelivs.length})
                       </span>
                       <button
-                        className="text-xs font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                        className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 flex items-center gap-1 cursor-pointer"
                         onClick={() => { setEditDeliv({ sponsor_id: sp.id }); setFormError(null); setDelivModal(true); }}
                       >
                         <Plus className="w-3.5 h-3.5" />
@@ -517,7 +517,7 @@ export default function Sponsors() {
                     </div>
 
                     {spDelivs.length === 0 ? (
-                      <div className="p-6 text-center text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
+                      <div className="p-6 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-300 dark:border-slate-800 rounded-xl">
                         No promised deliverables tracked yet for this sponsor.
                       </div>
                     ) : (
@@ -535,8 +535,8 @@ export default function Sponsors() {
                           <tbody>
                             {spDelivs.map(d => (
                               <tr key={d.id}>
-                                <td className="text-slate-100 font-medium">{d.description}</td>
-                                <td className="text-slate-400 font-mono">{formatDate(d.due_date)}</td>
+                                <td className="text-slate-900 dark:text-slate-100 font-medium">{d.description}</td>
+                                <td className="text-slate-500 dark:text-slate-400 font-mono">{formatDate(d.due_date)}</td>
                                 <td>
                                   <span className={`badge badge-${d.status}`}>{d.status}</span>
                                 </td>

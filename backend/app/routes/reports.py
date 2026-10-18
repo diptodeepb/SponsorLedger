@@ -1,4 +1,4 @@
-"""Reports routes — generate AI/fallback report and export."""
+"""Reports routes: generate report and export."""
 from __future__ import annotations
 from datetime import datetime, timezone
 
@@ -13,23 +13,28 @@ from app.services.export_report import report_to_markdown, report_to_html
 router = APIRouter(tags=["reports"])
 
 
-def _doc_to_out(doc: dict) -> dict:
+from app.services.gemma_report import sanitize_ai_text
+
+
+def _doc_to_out(doc: dict, currency: str = "USD") -> dict:
     priorities = doc.get("priorities", [])
-    # Normalize priorities to ensure they match schema
+    # Normalize priorities to ensure they match schema and have clean currency wording
     normalized_priorities = []
     for p in priorities:
         normalized_priorities.append({
             "finding_id": p.get("finding_id", ""),
-            "why_it_matters": p.get("why_it_matters", ""),
-            "recommended_next_step": p.get("recommended_next_step", ""),
+            "why_it_matters": sanitize_ai_text(p.get("why_it_matters", ""), currency),
+            "recommended_next_step": sanitize_ai_text(p.get("recommended_next_step", ""), currency),
         })
+    raw_summary = doc.get("executive_summary") or ""
+    clean_summary = sanitize_ai_text(raw_summary, currency) if raw_summary else None
     return {
         "id": str(doc["_id"]),
         "event_id": str(doc["event_id"]),
         "generated_at": doc.get("generated_at", datetime.now(timezone.utc)),
         "totals_snapshot": doc.get("totals_snapshot", {}),
         "findings_snapshot": doc.get("findings_snapshot", []),
-        "executive_summary": doc.get("executive_summary"),
+        "executive_summary": clean_summary,
         "priorities": normalized_priorities,
         "closing_checklist": doc.get("closing_checklist", []),
         "limitations": doc.get("limitations", []),
@@ -72,9 +77,15 @@ async def generate_event_report(event_id: str):
         "remaining_budget_paise": budget - expense_total,
     }
 
-    # Serialize findings for AI call (use string IDs)
-    serialized_findings = [
-        {
+    # Serialize findings for AI call (use string IDs and deduplicate)
+    seen_keys = set()
+    serialized_findings = []
+    for f in open_findings:
+        key = (f["rule_code"], tuple(sorted((str(r.get("type", "")), str(r.get("id", ""))) for r in f.get("source_refs", []))))
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+        serialized_findings.append({
             "id": str(f["_id"]),
             "rule_code": f["rule_code"],
             "severity": f["severity"],
@@ -82,9 +93,7 @@ async def generate_event_report(event_id: str):
             "explanation": f["explanation"],
             "source_refs": f.get("source_refs", []),
             "suggested_action": f.get("suggested_action"),
-        }
-        for f in open_findings
-    ]
+        })
 
     report_data, ai_status = await generate_report(event, totals, serialized_findings)
 
@@ -106,7 +115,8 @@ async def generate_event_report(event_id: str):
     reports_col = get_collection("audit_reports")
     result = await reports_col.insert_one(doc)
     doc["_id"] = result.inserted_id
-    return _doc_to_out(doc)
+    cur = event.get("currency", "USD") if event else "USD"
+    return _doc_to_out(doc, cur)
 
 
 @router.get("/api/events/{event_id}/reports", response_model=list[ReportOut])
@@ -115,9 +125,13 @@ async def list_event_reports(event_id: str):
         eid = ObjectId(event_id)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid event ID")
+    events_col = get_collection("events")
+    event = await events_col.find_one({"_id": eid})
+    event_currency = event.get("currency", "USD") if event else "USD"
+
     col = get_collection("audit_reports")
     docs = await col.find({"event_id": eid}).sort("generated_at", -1).to_list(50)
-    return [_doc_to_out(d) for d in docs]
+    return [_doc_to_out(d, event_currency) for d in docs]
 
 
 @router.get("/api/reports/{report_id}", response_model=ReportOut)
@@ -130,7 +144,10 @@ async def get_report(report_id: str):
     doc = await col.find_one({"_id": rid})
     if not doc:
         raise HTTPException(status_code=404, detail="Report not found")
-    return _doc_to_out(doc)
+    events_col = get_collection("events")
+    event = await events_col.find_one({"_id": doc.get("event_id")})
+    event_currency = event.get("currency", "USD") if event else "USD"
+    return _doc_to_out(doc, event_currency)
 
 
 @router.get("/api/reports/{report_id}/export")

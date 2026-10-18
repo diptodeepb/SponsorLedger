@@ -1,4 +1,4 @@
-"""Sponsors routes — CRUD per event."""
+"""Sponsors routes: CRUD per event."""
 from __future__ import annotations
 from datetime import datetime, timezone
 

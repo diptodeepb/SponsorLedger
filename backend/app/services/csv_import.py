@@ -1,4 +1,4 @@
-"""CSV import service — parse, validate, preview, and persist expense rows."""
+"""CSV import service: parse, validate, preview, and persist expense rows."""
 from __future__ import annotations
 import csv
 import hashlib

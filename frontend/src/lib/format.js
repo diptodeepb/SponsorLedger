@@ -65,6 +65,18 @@ export function formatMoney(paise, overrideCur = null, rates = _activeRates) {
   }).format(numericVal);
 }
 
+/** Format raw numeric value directly into localized currency string */
+export function formatCurrency(amount, cur = _activeCurrency) {
+  const cfg = CURRENCY_FORMAT_CONFIG[cur] || CURRENCY_FORMAT_CONFIG.USD;
+  const num = typeof amount === 'number' ? amount : (parseFloat(amount) || 0);
+  return new Intl.NumberFormat(cfg.locale, {
+    style: 'currency',
+    currency: cur,
+    minimumFractionDigits: cfg.decimals,
+    maximumFractionDigits: cfg.decimals,
+  }).format(num);
+}
+
 /**
  * Format integer paise into currency string.
  * Defaults to the globally active currency (USD by default).
@@ -76,7 +88,7 @@ export function formatINR(paise, overrideCur = null) {
 
 /** Format date string or Date object as readable date. */
 export function formatDate(d) {
-  if (!d) return '—';
+  if (!d) return 'N/A';
   const dt = typeof d === 'string' ? new Date(d + (d.includes('T') ? '' : 'T00:00:00')) : d;
   return new Intl.DateTimeFormat('en-IN', {
     year: 'numeric',
@@ -87,7 +99,7 @@ export function formatDate(d) {
 
 /** Format ISO datetime string as readable date+time. */
 export function formatDateTime(d) {
-  if (!d) return '—';
+  if (!d) return 'N/A';
   const dt = new Date(d);
   return new Intl.DateTimeFormat('en-IN', {
     year: 'numeric',
@@ -120,3 +132,57 @@ export function truncate(str, maxLen = 60) {
   if (!str) return '';
   return str.length > maxLen ? str.slice(0, maxLen) + '…' : str;
 }
+
+/**
+ * Adapt any accidental sub-unit / paise or static currency mentions in narrative text into active currency.
+ */
+export function adaptCurrencyInText(text, targetCur = _activeCurrency, rates = _activeRates) {
+  if (!text) return text;
+  const cur = targetCur || _activeCurrency || 'USD';
+  const r = rates || _activeRates;
+  const inrRate = r['INR'] || 86.50;
+  const targetRate = r[cur] || 1.0;
+
+  // 1. Convert any paise mentions (e.g. "2,500,000 paise")
+  let adapted = text.replace(/([\d,]+)\s*paise/gi, (_match, numStr) => {
+    const rawVal = parseFloat(numStr.replace(/,/g, ''));
+    if (!isNaN(rawVal)) {
+      return formatMoney(rawVal, cur, r);
+    }
+    return _match;
+  }).replace(/\bpaise\b/gi, 'units');
+
+  // 2. Convert any Rupee / INR mentions (e.g. ₹25,000.00, ₹26,500, INR 11,000) to target currency
+  adapted = adapted.replace(/(?:₹|INR\s*|Rs\.?\s*)([\d,]+(?:\.\d{1,2})?)/gi, (_match, numStr) => {
+    const inrVal = parseFloat(numStr.replace(/,/g, ''));
+    if (!isNaN(inrVal)) {
+      if (cur === 'INR') {
+        return `₹${inrVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      }
+      // Convert inrVal to target currency using exchange rates
+      const targetVal = (inrVal / inrRate) * targetRate;
+      return formatCurrency(targetVal, cur);
+    }
+    return _match;
+  });
+
+  // 3. Convert any USD mentions ($263.26, USD 263.26) if active view is not USD
+  if (cur !== 'USD') {
+    adapted = adapted.replace(/(?:\$|USD\s*)([\d,]+(?:\.\d{1,2})?)/gi, (_match, numStr) => {
+      const usdVal = parseFloat(numStr.replace(/,/g, ''));
+      if (!isNaN(usdVal)) {
+        const targetVal = usdVal * targetRate;
+        return formatCurrency(targetVal, cur);
+      }
+      return _match;
+    });
+  }
+
+  return adapted;
+}
+
+// Alias for backwards compatibility
+export const adaptPaiseInText = adaptCurrencyInText;
+
+
+

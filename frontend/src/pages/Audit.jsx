@@ -25,6 +25,7 @@ export default function Audit() {
   const [auditRunning, setAuditRunning] = useState(false);
   const [error, setError] = useState(null);
   const [actionSuccess, setActionSuccess] = useState(null);
+  const [duplicateNotice, setDuplicateNotice] = useState(null);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState('open'); // 'all' | 'open' | 'resolved' | 'dismissed'
@@ -78,8 +79,13 @@ export default function Audit() {
       const res = await runAudit(event.id);
       const fList = await getFindings(event.id);
       setFindings(fList);
+      if (res.duplicates_skipped && res.duplicates_skipped.length > 0) {
+        setDuplicateNotice(`Duplicate findings detected and omitted (${res.duplicates_skipped.length}): ${res.duplicates_skipped.join(' • ')}`);
+      } else {
+        setDuplicateNotice(null);
+      }
       setActionSuccess(`Audit engine executed! ${res.findings_created} new finding(s) cataloged.`);
-      setTimeout(() => setActionSuccess(null), 5000);
+      setTimeout(() => setActionSuccess(null), 6000);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -182,9 +188,19 @@ export default function Audit() {
       />
 
       {actionSuccess && (
-        <div className="alert-success mb-6 flex items-center justify-between animate-fade-in">
+        <div className="alert-success mb-4 flex items-center justify-between animate-fade-in">
           <span>{actionSuccess}</span>
-          <button className="text-emerald-300 font-bold" onClick={() => setActionSuccess(null)}>×</button>
+          <button className="text-emerald-300 font-bold ml-2" onClick={() => setActionSuccess(null)}>×</button>
+        </div>
+      )}
+
+      {duplicateNotice && (
+        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl px-4 py-3 mb-6 flex items-start justify-between text-xs text-amber-800 dark:text-amber-300 animate-fade-in">
+          <div className="flex items-start gap-2">
+            <span className="font-semibold shrink-0 uppercase tracking-wide text-[10px] bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 px-1.5 py-0.5 rounded">Omitted</span>
+            <span className="leading-relaxed">{duplicateNotice}</span>
+          </div>
+          <button className="text-amber-700 dark:text-amber-400 font-bold ml-3 text-sm hover:opacity-80" onClick={() => setDuplicateNotice(null)}>×</button>
         </div>
       )}
 
@@ -198,37 +214,37 @@ export default function Audit() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
         <div className="card p-4">
-          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Findings</div>
-          <div className="text-2xl font-bold font-mono text-white mt-1">{totalFindings}</div>
+          <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Findings</div>
+          <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white mt-1">{totalFindings}</div>
           <div className="text-xs text-slate-500 mt-0.5">{openFindings.length} unresolved</div>
         </div>
         <div className="card p-4 border-l-4 border-rose-500">
-          <div className="text-xs font-semibold text-rose-400 uppercase tracking-wider">High Severity</div>
-          <div className="text-2xl font-bold font-mono text-rose-400 mt-1">{highSeverity.length}</div>
+          <div className="text-xs font-semibold text-rose-500 dark:text-rose-400 uppercase tracking-wider">High Severity</div>
+          <div className="text-2xl font-bold font-mono text-rose-600 dark:text-rose-400 mt-1">{highSeverity.length}</div>
           <div className="text-xs text-rose-500/80 mt-0.5">Immediate attention</div>
         </div>
         <div className="card p-4 border-l-4 border-amber-500">
-          <div className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Medium Severity</div>
-          <div className="text-2xl font-bold font-mono text-amber-400 mt-1">{medSeverity.length}</div>
+          <div className="text-xs font-semibold text-amber-500 dark:text-amber-400 uppercase tracking-wider">Medium Severity</div>
+          <div className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400 mt-1">{medSeverity.length}</div>
           <div className="text-xs text-amber-500/80 mt-0.5">Review candidate items</div>
         </div>
         <div className="card p-4 border-l-4 border-blue-500">
-          <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider">Low Severity</div>
-          <div className="text-2xl font-bold font-mono text-blue-400 mt-1">{lowSeverity.length}</div>
+          <div className="text-xs font-semibold text-blue-500 dark:text-blue-400 uppercase tracking-wider">Low Severity</div>
+          <div className="text-2xl font-bold font-mono text-blue-600 dark:text-blue-400 mt-1">{lowSeverity.length}</div>
           <div className="text-xs text-blue-500/80 mt-0.5">Good recordkeeping</div>
         </div>
         <div className="card p-4 border-l-4 border-emerald-500">
-          <div className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Resolved / Dismissed</div>
-          <div className="text-2xl font-bold font-mono text-emerald-400 mt-1">{resolvedFindings.length + dismissedFindings.length}</div>
+          <div className="text-xs font-semibold text-emerald-500 dark:text-emerald-400 uppercase tracking-wider">Resolved / Dismissed</div>
+          <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-1">{resolvedFindings.length + dismissedFindings.length}</div>
           <div className="text-xs text-emerald-500/80 mt-0.5">{resolvedFindings.length} resolved, {dismissedFindings.length} dismissed</div>
         </div>
       </div>
 
       {/* Audit Transparency Callout */}
-      <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-6 flex items-start gap-3.5 text-xs text-slate-400 backdrop-blur-sm">
-        <Lightbulb className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+      <div className="bg-indigo-50/70 dark:bg-slate-900/50 border border-indigo-200/80 dark:border-slate-800 rounded-2xl p-4 mb-6 flex items-start gap-3.5 text-xs text-slate-700 dark:text-slate-400 backdrop-blur-sm">
+        <Lightbulb className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
         <div className="leading-relaxed">
-          <span className="font-semibold text-slate-200">Audit Safety Guardrail: </span>
+          <span className="font-semibold text-slate-900 dark:text-slate-200">Audit Safety Guardrail: </span>
           All audit findings are generated deterministically in Python using strict rule evaluation.
           No financial numbers are fabricated or hallucinated by AI. Findings represent verifiable discrepancies
           linking to original source records for human review.
@@ -240,7 +256,7 @@ export default function Audit() {
         <div className="p-4 flex flex-col md:flex-row gap-3 items-center justify-between">
           {/* Status buttons */}
           <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto">
-            <span className="text-xs font-semibold text-slate-400 mr-1 shrink-0">Status:</span>
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 mr-1 shrink-0">Status:</span>
             {[
               { id: 'open', label: `Open (${openFindings.length})` },
               { id: 'resolved', label: `Resolved (${resolvedFindings.length})` },
@@ -253,7 +269,7 @@ export default function Audit() {
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
                   statusFilter === tab.id
                     ? 'bg-indigo-600 text-white font-semibold shadow-sm'
-                    : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-750'
+                    : 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-750 border border-slate-200/80 dark:border-slate-700/60'
                 }`}
               >
                 {tab.label}
@@ -264,9 +280,9 @@ export default function Audit() {
           <div className="flex items-center gap-3 w-full md:w-auto">
             {/* Severity select */}
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold text-slate-400 shrink-0">Severity:</span>
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 shrink-0">Severity:</span>
               <select
-                className="form-input text-xs py-1.5 px-3 bg-slate-900"
+                className="form-input text-xs py-1.5 px-3 bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700"
                 value={severityFilter}
                 onChange={e => setSeverityFilter(e.target.value)}
               >
@@ -286,7 +302,7 @@ export default function Audit() {
                 onChange={e => setSearchTerm(e.target.value)}
                 className="form-input text-xs py-1.5 pl-8 pr-3"
               />
-              <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" />
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
             </div>
           </div>
         </div>
@@ -294,21 +310,22 @@ export default function Audit() {
 
       {/* Findings List */}
       {filteredFindings.length === 0 ? (
-        <div className="card p-12 text-center text-slate-400">
-          <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-300">
-            {statusFilter === 'open' ? <ShieldCheck className="w-6 h-6 text-emerald-400" /> : <Search className="w-6 h-6 text-slate-400" />}
+        <div className="card p-12 text-center text-slate-600 dark:text-slate-400">
+          <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center mx-auto mb-3 text-slate-700 dark:text-slate-300">
+            {statusFilter === 'open' ? <ShieldCheck className="w-6 h-6 text-emerald-600 dark:text-emerald-400" /> : <Search className="w-6 h-6 text-slate-500 dark:text-slate-400" />}
           </div>
-          <div className="font-semibold text-white text-base">
+          <div className="font-semibold text-slate-900 dark:text-white text-base">
             {statusFilter === 'open' ? 'All Ledger Rules Clear' : 'No matching findings'}
           </div>
-          <div className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+          <div className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-sm mx-auto">
             {statusFilter === 'open'
               ? 'Every recorded transaction and sponsor commitment complies with deterministic rules.'
               : 'Try broadening your search term or adjusting severity filters.'}
           </div>
           {statusFilter === 'open' && (
-            <button className="btn-secondary btn-sm mt-4" onClick={handleRunAudit}>
-              Re-run Audit Engine
+            <button className="btn-secondary btn-sm mt-4 inline-flex items-center gap-1.5" onClick={handleRunAudit}>
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Re-run Audit Engine</span>
             </button>
           )}
         </div>
@@ -319,9 +336,9 @@ export default function Audit() {
               key={f.id}
               className={`card ${
                 f.status === 'resolved'
-                  ? 'bg-slate-900/40 border-slate-800/60 opacity-80'
+                  ? 'bg-slate-50/80 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800/60 opacity-80'
                   : f.status === 'dismissed'
-                  ? 'bg-slate-900/30 border-slate-800/40 opacity-70'
+                  ? 'bg-slate-50/60 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800/40 opacity-70'
                   : f.severity === 'high'
                   ? 'border-l-4 border-l-rose-500'
                   : f.severity === 'medium'
@@ -336,7 +353,7 @@ export default function Audit() {
                     <span className={`badge ${severityBadge(f.severity)}`}>
                       {f.severity.toUpperCase()}
                     </span>
-                    <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-indigo-300 font-semibold border border-slate-700">
+                    <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 font-semibold border border-slate-200 dark:border-slate-700">
                       {f.rule_code}
                     </span>
                     <span className={`badge ${statusBadge(f.status)}`}>
@@ -350,15 +367,15 @@ export default function Audit() {
                 </div>
 
                 {/* Title & explanation */}
-                <h3 className="text-base font-bold text-white mb-2">{f.title}</h3>
-                <p className="text-sm text-slate-300 leading-relaxed mb-4">{f.explanation}</p>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">{f.title}</h3>
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-4">{f.explanation}</p>
 
                 {/* Suggested Action callout */}
                 {f.suggested_action && (
-                  <div className="bg-indigo-950/30 border border-indigo-800/40 rounded-xl p-3.5 text-xs text-indigo-200 mb-4 flex items-start gap-2.5">
-                    <Lightbulb className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <div className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/40 rounded-xl p-3.5 text-xs text-indigo-900 dark:text-indigo-200 mb-4 flex items-start gap-2.5">
+                    <Lightbulb className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
                     <div>
-                      <strong className="font-semibold text-indigo-300">Suggested Action: </strong>
+                      <strong className="font-semibold text-indigo-700 dark:text-indigo-300">Suggested Action: </strong>
                       <span>{f.suggested_action}</span>
                     </div>
                   </div>
@@ -366,9 +383,9 @@ export default function Audit() {
 
                 {/* Evidence / Source references */}
                 {f.source_refs && f.source_refs.length > 0 && (
-                  <div className="pt-3 border-t border-slate-800/70 mb-4">
-                    <div className="text-xs font-semibold text-slate-400 mb-2 flex items-center gap-1.5">
-                      <LinkIcon className="w-3.5 h-3.5 text-slate-500" />
+                  <div className="pt-3 border-t border-slate-200 dark:border-slate-800/70 mb-4">
+                    <div className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2 flex items-center gap-1.5">
+                      <LinkIcon className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                       <span>Linked Source Records & Evidence:</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -376,14 +393,14 @@ export default function Audit() {
                         <button
                           key={idx}
                           onClick={() => inspectEvidence(ref)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-750 text-slate-200 text-xs transition-colors border border-slate-700/80 group"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs transition-colors border border-slate-200 dark:border-slate-700/80 group cursor-pointer"
                           title="Click to inspect underlying database record"
                         >
-                          <span className="capitalize font-semibold text-slate-400 group-hover:text-indigo-400">
+                          <span className="capitalize font-semibold text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
                             {ref.type}:
                           </span>
-                          <span className="font-medium font-mono text-slate-300 truncate max-w-xs">{ref.label || ref.id}</span>
-                          <ExternalLink className="w-3 h-3 text-slate-500 group-hover:text-indigo-400 ml-0.5" />
+                          <span className="font-medium font-mono text-slate-800 dark:text-slate-300 truncate max-w-xs">{ref.label || ref.id}</span>
+                          <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 ml-0.5" />
                         </button>
                       ))}
                     </div>
@@ -391,7 +408,7 @@ export default function Audit() {
                 )}
 
                 {/* Action buttons */}
-                <div className="flex items-center justify-between pt-3 border-t border-slate-800/60">
+                <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-800/60">
                   <div className="text-xs text-slate-500 font-mono">
                     ID: {f.id.slice(0, 14)}…
                   </div>
@@ -438,96 +455,96 @@ export default function Audit() {
       >
         {selectedRef && (
           <div>
-            <div className="bg-slate-950 rounded-xl p-3.5 border border-slate-800 mb-4 text-xs font-mono space-y-1 text-slate-400">
-              <div><span className="text-slate-500">Record ID:</span> <span className="text-slate-200">{selectedRef.id}</span></div>
-              <div><span className="text-slate-500">Record Type:</span> <span className="text-indigo-400 capitalize">{selectedRef.type}</span></div>
-              {selectedRef.label && <div><span className="text-slate-500">Label:</span> <span className="text-slate-200">{selectedRef.label}</span></div>}
+            <div className="bg-slate-50 dark:bg-slate-950 rounded-xl p-3.5 border border-slate-200 dark:border-slate-800 mb-4 text-xs font-mono space-y-1 text-slate-500 dark:text-slate-400">
+              <div><span className="text-slate-400 dark:text-slate-500">Record ID:</span> <span className="text-slate-800 dark:text-slate-200">{selectedRef.id}</span></div>
+              <div><span className="text-slate-400 dark:text-slate-500">Record Type:</span> <span className="text-indigo-600 dark:text-indigo-400 capitalize">{selectedRef.type}</span></div>
+              {selectedRef.label && <div><span className="text-slate-400 dark:text-slate-500">Label:</span> <span className="text-slate-800 dark:text-slate-200">{selectedRef.label}</span></div>}
             </div>
 
             {refLoading ? (
-              <div className="py-6 text-center text-slate-400 text-xs">Retrieving database record…</div>
+              <div className="py-6 text-center text-slate-500 dark:text-slate-400 text-xs">Retrieving database record…</div>
             ) : refDetails ? (
               <div className="space-y-3 text-sm">
                 {selectedRef.type === 'expense' && (
-                  <div className="bg-slate-900 rounded-xl border border-slate-800 divide-y divide-slate-800/70 text-xs">
+                  <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-200 dark:divide-slate-800/70 text-xs">
                     <div className="px-3.5 py-2.5 flex justify-between">
-                      <span className="text-slate-400">Vendor / Merchant:</span>
-                      <span className="font-semibold text-white">{refDetails.vendor}</span>
+                      <span className="text-slate-500 dark:text-slate-400">Vendor / Merchant:</span>
+                      <span className="font-semibold text-slate-900 dark:text-white">{refDetails.vendor}</span>
                     </div>
                     <div className="px-3.5 py-2.5 flex justify-between">
-                      <span className="text-slate-400">Category:</span>
+                      <span className="text-slate-500 dark:text-slate-400">Category:</span>
                       <span className="badge badge-low">{refDetails.category}</span>
                     </div>
                     <div className="px-3.5 py-2.5 flex justify-between">
-                      <span className="text-slate-400">Amount:</span>
-                      <span className="font-mono font-bold text-white">{formatMoney(refDetails.amount_paise)}</span>
+                      <span className="text-slate-500 dark:text-slate-400">Amount:</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">{formatMoney(refDetails.amount_paise)}</span>
                     </div>
                     <div className="px-3.5 py-2.5 flex justify-between">
-                      <span className="text-slate-400">Date:</span>
-                      <span className="font-mono">{formatDate(refDetails.date)}</span>
+                      <span className="text-slate-500 dark:text-slate-400">Date:</span>
+                      <span className="font-mono text-slate-700 dark:text-slate-300">{formatDate(refDetails.date)}</span>
                     </div>
                     <div className="px-3.5 py-2.5 flex justify-between">
-                      <span className="text-slate-400">Receipt Ref:</span>
+                      <span className="text-slate-500 dark:text-slate-400">Receipt Ref:</span>
                       <span>
                         {refDetails.receipt_ref ? (
-                          <code className="bg-slate-800 px-2 py-0.5 rounded font-mono text-indigo-300 border border-slate-700">
+                          <code className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-mono text-indigo-700 dark:text-indigo-300 border border-slate-200 dark:border-slate-700">
                             {refDetails.receipt_ref}
                           </code>
                         ) : (
-                          <span className="text-rose-400 font-medium">None Recorded</span>
+                          <span className="text-rose-600 dark:text-rose-400 font-medium">None Recorded</span>
                         )}
                       </span>
                     </div>
                     {refDetails.notes && (
                       <div className="px-3.5 py-2.5 flex justify-between">
-                        <span className="text-slate-400">Internal Notes:</span>
-                        <span className="text-slate-300 text-right max-w-xs">{refDetails.notes}</span>
+                        <span className="text-slate-500 dark:text-slate-400">Internal Notes:</span>
+                        <span className="text-slate-700 dark:text-slate-300 text-right max-w-xs">{refDetails.notes}</span>
                       </div>
                     )}
                   </div>
                 )}
 
                 {selectedRef.type === 'sponsor' && (
-                  <div className="bg-slate-900 rounded-xl border border-slate-800 divide-y divide-slate-800/70 text-xs">
+                  <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-200 dark:divide-slate-800/70 text-xs">
                     <div className="px-3.5 py-2.5 flex justify-between">
-                      <span className="text-slate-400">Organization:</span>
-                      <span className="font-semibold text-white">{refDetails.name}</span>
+                      <span className="text-slate-500 dark:text-slate-400">Organization:</span>
+                      <span className="font-semibold text-slate-900 dark:text-white">{refDetails.name}</span>
                     </div>
                     <div className="px-3.5 py-2.5 flex justify-between">
-                      <span className="text-slate-400">Committed:</span>
-                      <span className="font-mono font-semibold text-white">{formatMoney(refDetails.committed_paise)}</span>
+                      <span className="text-slate-500 dark:text-slate-400">Committed:</span>
+                      <span className="font-mono font-semibold text-slate-900 dark:text-white">{formatMoney(refDetails.committed_paise)}</span>
                     </div>
                     <div className="px-3.5 py-2.5 flex justify-between">
-                      <span className="text-slate-400">Received:</span>
-                      <span className="font-mono font-semibold text-emerald-400">{formatMoney(refDetails.received_paise)}</span>
+                      <span className="text-slate-500 dark:text-slate-400">Received:</span>
+                      <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">{formatMoney(refDetails.received_paise)}</span>
                     </div>
                     <div className="px-3.5 py-2.5 flex justify-between">
-                      <span className="text-slate-400">Outstanding:</span>
-                      <span className="font-mono font-bold text-amber-400">
+                      <span className="text-slate-500 dark:text-slate-400">Outstanding:</span>
+                      <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
                         {formatMoney(Math.max(0, (refDetails.committed_paise || 0) - (refDetails.received_paise || 0)))}
                       </span>
                     </div>
                     {refDetails.contact_label && (
                       <div className="px-3.5 py-2.5 flex justify-between">
-                        <span className="text-slate-400">Primary Contact:</span>
-                        <span className="text-slate-200">{refDetails.contact_label}</span>
+                        <span className="text-slate-500 dark:text-slate-400">Primary Contact:</span>
+                        <span className="text-slate-700 dark:text-slate-200">{refDetails.contact_label}</span>
                       </div>
                     )}
                   </div>
                 )}
 
                 {selectedRef.type === 'deliverable' && (
-                  <div className="bg-slate-900 rounded-xl border border-slate-800 divide-y divide-slate-800/70 text-xs">
+                  <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-200 dark:divide-slate-800/70 text-xs">
                     <div className="px-3.5 py-2.5 flex justify-between">
-                      <span className="text-slate-400">Description:</span>
-                      <span className="font-semibold text-white">{refDetails.description || refDetails.title}</span>
+                      <span className="text-slate-500 dark:text-slate-400">Description:</span>
+                      <span className="font-semibold text-slate-900 dark:text-white">{refDetails.description || refDetails.title}</span>
                     </div>
                     <div className="px-3.5 py-2.5 flex justify-between">
-                      <span className="text-slate-400">Due Date:</span>
-                      <span className="font-mono text-slate-300">{formatDate(refDetails.due_date)}</span>
+                      <span className="text-slate-500 dark:text-slate-400">Due Date:</span>
+                      <span className="font-mono text-slate-700 dark:text-slate-300">{formatDate(refDetails.due_date)}</span>
                     </div>
                     <div className="px-3.5 py-2.5 flex justify-between">
-                      <span className="text-slate-400">Status:</span>
+                      <span className="text-slate-500 dark:text-slate-400">Status:</span>
                       <span className={`badge badge-${refDetails.status}`}>{refDetails.status}</span>
                     </div>
                     {refDetails.evidence_url && (

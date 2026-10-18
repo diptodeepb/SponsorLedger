@@ -162,13 +162,13 @@ function CSVImport({ eventId, onImported }) {
 
   return (
     <div className="card">
-      <div className="card-header bg-slate-900/90">
+      <div className="card-header">
         <div className="flex items-center gap-2">
-          <UploadCloud className="w-4 h-4 text-indigo-400" />
-          <h2 className="text-sm font-semibold text-white">Batch Expense Ingestion</h2>
+          <UploadCloud className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Batch Expense Ingestion</h2>
         </div>
         {step !== 'idle' && step !== 'done' && (
-          <button className="text-xs text-slate-400 hover:text-slate-200" onClick={reset}>
+          <button className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer" onClick={reset}>
             <X className="w-4 h-4" />
           </button>
         )}
@@ -178,25 +178,25 @@ function CSVImport({ eventId, onImported }) {
 
         {step === 'idle' && (
           <div>
-            <p className="text-xs text-slate-400 mb-3 leading-relaxed">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
               Upload a bank statement or spreadsheet CSV. Required headers:{' '}
-              <code className="text-xs bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded font-mono">
+              <code className="text-xs bg-slate-100 dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded font-mono border border-slate-200 dark:border-slate-700">
                 date, vendor, category, amount_inr, receipt_ref, notes
               </code>
             </p>
             <label className="cursor-pointer block">
-              <div className="border-2 border-dashed border-slate-750 hover:border-indigo-500/60 rounded-2xl p-8 text-center bg-slate-950/40 hover:bg-slate-900/50 transition-all duration-200 group">
-                <UploadCloud className="w-8 h-8 text-slate-400 group-hover:text-indigo-400 mx-auto mb-2 transition-colors" />
-                <div className="text-sm font-medium text-slate-200 group-hover:text-white">
+              <div className="border-2 border-dashed border-slate-300 dark:border-slate-750 hover:border-indigo-500/60 rounded-2xl p-8 text-center bg-slate-50/50 dark:bg-slate-950/40 hover:bg-slate-100/50 dark:hover:bg-slate-900/50 transition-all duration-200 group">
+                <UploadCloud className="w-8 h-8 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 mx-auto mb-2 transition-colors" />
+                <div className="text-sm font-medium text-slate-700 dark:text-slate-200 group-hover:text-slate-950 dark:group-hover:text-white">
                   Click to select CSV or drop file here
                 </div>
-                <div className="text-xs text-slate-500 mt-1">UTF-8 encoded, up to 2,000 transactions</div>
+                <div className="text-xs text-slate-400 dark:text-slate-500 mt-1">UTF-8 encoded, up to 2,000 transactions</div>
               </div>
               <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleFile} />
             </label>
-            <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
-              <span>Try with repo sample: <code className="text-slate-400">sample-data/expenses.csv</code></span>
-              <span>Deterministic duplicate checking active</span>
+            <div className="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+              <span>Sample template: <code className="text-slate-600 dark:text-slate-300">sample-data/expenses.csv</code></span>
+              <span>Duplicate detection active</span>
             </div>
           </div>
         )}
@@ -276,14 +276,14 @@ function CSVImport({ eventId, onImported }) {
                     <tbody>
                       {preview.accepted_rows.slice(0, 5).map((r, i) => (
                         <tr key={i}>
-                          <td className="font-mono text-slate-400">{r.date}</td>
-                          <td className="font-medium text-slate-200">{r.vendor}</td>
+                          <td className="font-mono text-slate-500 dark:text-slate-400">{r.date}</td>
+                          <td className="font-medium text-slate-800 dark:text-slate-200">{r.vendor}</td>
                           <td>
                             <span className="badge badge-low">{r.category}</span>
                           </td>
-                          <td className="font-mono font-semibold text-emerald-400">{formatMoney(r.amount_paise)}</td>
-                          <td className="font-mono text-slate-400">
-                            {r.receipt_ref || <span className="text-slate-600">—</span>}
+                          <td className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">{formatMoney(r.amount_paise)}</td>
+                          <td className="font-mono text-slate-500 dark:text-slate-400">
+                            {r.receipt_ref || <span className="text-slate-400 dark:text-slate-600">None</span>}
                           </td>
                         </tr>
                       ))}
@@ -418,13 +418,13 @@ export default function Expenses() {
         <div className="card">
           <div className="card-header">
             <div className="flex items-center gap-2">
-              <Receipt className="w-4 h-4 text-slate-400" />
-              <h2 className="text-sm font-semibold text-slate-200">
+              <Receipt className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-200">
                 All Transactions ({expenses.length})
               </h2>
             </div>
-            <span className="text-xs text-slate-400 font-mono">
-              Total: <span className="font-semibold text-slate-200">{formatMoney(total)}</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+              Total: <span className="font-semibold text-slate-900 dark:text-slate-200">{formatMoney(total)}</span>
             </span>
           </div>
           <div className="table-wrapper">
@@ -442,25 +442,25 @@ export default function Expenses() {
               <tbody>
                 {expenses.map(e => (
                   <tr key={e.id}>
-                    <td className="text-slate-400 font-mono text-xs">{formatDate(e.date)}</td>
-                    <td className="font-semibold text-white">{e.vendor}</td>
+                    <td className="text-slate-500 dark:text-slate-400 font-mono text-xs">{formatDate(e.date)}</td>
+                    <td className="font-semibold text-slate-900 dark:text-white">{e.vendor}</td>
                     <td>
                       <span className="badge badge-low">{e.category}</span>
                     </td>
-                    <td className="font-mono font-bold text-slate-100">{formatMoney(e.amount_paise)}</td>
+                    <td className="font-mono font-bold text-slate-900 dark:text-slate-100">{formatMoney(e.amount_paise)}</td>
                     <td>
                       {e.receipt_ref ? (
-                        <code className="text-xs bg-slate-800 text-indigo-300 px-2 py-0.5 rounded font-mono border border-slate-750">
+                        <code className="text-xs bg-slate-100 dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded font-mono border border-slate-200 dark:border-slate-750">
                           {e.receipt_ref}
                         </code>
                       ) : (
-                        <span className="text-xs font-medium text-rose-400 flex items-center gap-1">
+                        <span className="text-xs font-medium text-rose-600 dark:text-rose-400 flex items-center gap-1">
                           <AlertTriangle className="w-3 h-3" />
                           <span>Missing Ref</span>
                         </span>
                       )}
                     </td>
-                    <td className="text-slate-400 text-xs max-w-xs truncate">{e.notes || '—'}</td>
+                    <td className="text-slate-500 dark:text-slate-400 text-xs max-w-xs truncate">{e.notes || <span className="text-slate-400 dark:text-slate-600 italic">None</span>}</td>
                   </tr>
                 ))}
               </tbody>

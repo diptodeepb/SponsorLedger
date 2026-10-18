@@ -1,4 +1,4 @@
-"""Deliverables routes — list, create, update."""
+"""Deliverables routes: list, create, update."""
 from __future__ import annotations
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException
