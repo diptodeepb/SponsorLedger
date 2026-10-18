@@ -1,8 +1,9 @@
+/* oxlint-disable react/only-export-components */
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { getCurrencyRates } from '../lib/api';
 import { setActiveCurrencyState } from '../lib/format';
 
-export const CURRENCY_CONFIG = {
+const CURRENCY_CONFIG = {
   USD: { code: 'USD', symbol: '$', name: 'US Dollar', flag: '🇺🇸', locale: 'en-US', decimals: 2 },
   INR: { code: 'INR', symbol: '₹', name: 'Indian Rupee', flag: '🇮🇳', locale: 'en-IN', decimals: 2 },
   EUR: { code: 'EUR', symbol: '€', name: 'Euro', flag: '🇪🇺', locale: 'de-DE', decimals: 2 },
@@ -14,7 +15,7 @@ export const CURRENCY_CONFIG = {
   SGD: { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar', flag: '🇸🇬', locale: 'en-SG', decimals: 2 },
 };
 
-export const DEFAULT_RATES = {
+const DEFAULT_RATES = {
   USD: 1.0,
   INR: 83.5,
   EUR: 0.92,

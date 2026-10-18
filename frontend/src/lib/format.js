@@ -112,7 +112,7 @@ export function severityBadge(severity) {
 
 /** Convert status to CSS class. */
 export function statusBadge(status) {
-  return `badge-${status}` || 'badge-open';
+  return status ? `badge-${status}` : 'badge-open';
 }
 
 /** Truncate a string with ellipsis. */

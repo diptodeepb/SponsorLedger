@@ -6,18 +6,15 @@ import {
   Download,
   Printer,
   ShieldCheck,
-  CheckCircle2,
   AlertTriangle,
   ArrowRight,
   Cpu,
-  Clock,
   Wallet,
   CheckSquare,
   Scale,
-  ExternalLink,
 } from 'lucide-react';
 import { getEvents, getReports, generateReport, exportReport } from '../lib/api';
-import { formatDate, formatDateTime } from '../lib/format';
+import { formatDateTime } from '../lib/format';
 import { useCurrency } from '../context/CurrencyContext';
 import { LoadingPage, ErrorMessage, PageHeader, EmptyState } from '../components/UI';
 
@@ -33,29 +30,26 @@ export default function Report() {
   const [completedItems, setCompletedItems] = useState({});
 
   useEffect(() => {
+    async function loadData() {
+      try {
+        const events = await getEvents();
+        if (events.length > 0) {
+          const ev = events[0];
+          setEvent(ev);
+          const reportList = await getReports(ev.id).catch(() => []);
+          setReports(reportList);
+          if (reportList.length > 0) {
+            setCurrentReport(reportList[0]);
+          }
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
     loadData();
   }, []);
-
-  async function loadData() {
-    setLoading(true);
-    setError(null);
-    try {
-      const events = await getEvents();
-      if (events.length > 0) {
-        const ev = events[0];
-        setEvent(ev);
-        const reportList = await getReports(ev.id).catch(() => []);
-        setReports(reportList);
-        if (reportList.length > 0) {
-          setCurrentReport(reportList[0]);
-        }
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   const handleGenerate = async () => {
     if (!event) return;

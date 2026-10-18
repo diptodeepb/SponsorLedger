@@ -1,15 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { useCurrency } from '../context/CurrencyContext';
-import { ChevronDown, Check, Coins, RefreshCw } from 'lucide-react';
+import { ChevronDown, Check, Coins } from 'lucide-react';
 
-export default function CurrencySwitcher({ compact = false }) {
+export default function CurrencySwitcher({ _compact = false }) {
   const {
     currency,
     setCurrency,
     currencies,
     currencyConfig,
     rates,
-    loadingRates,
   } = useCurrency();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
