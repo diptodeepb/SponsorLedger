@@ -1,6 +1,6 @@
 services:
   # ---------------------------------------------------------------------------
-  # 1. FastAPI Backend Web Service
+  # 1. FastAPI Backend Web Service (Singapore)
   # ---------------------------------------------------------------------------
   - type: web
     name: sponsorledger-backend
@@ -27,18 +27,14 @@ services:
       - key: SENTRY_DSN
         sync: false # Optional: Set in Render Dashboard if error telemetry is enabled
       - key: FRONTEND_ORIGIN
-        fromService:
-          type: web
-          name: sponsorledger
-          property: url
+        value: https://sponsorledger.onrender.com
 
   # ---------------------------------------------------------------------------
-  # 2. Vite React Frontend Static Site (https://sponsorledger.onrender.com)
+  # 2. Vite React Frontend Static Site (Global CDN -> https://sponsorledger.onrender.com)
   # ---------------------------------------------------------------------------
   - type: web
     name: sponsorledger
     runtime: static
-    region: singapore
     rootDir: frontend
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
@@ -51,7 +47,4 @@ services:
       - key: NODE_VERSION
         value: "22.12.0"
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: sponsorledger-backend
-          property: url
+        value: https://sponsorledger-backend.onrender.com
