@@ -1,6 +1,11 @@
 """Tests for Gemma AI irregular text to CSV ingestion and preview."""
+from unittest.mock import AsyncMock, MagicMock
 import pytest
-from app.services.gemma_txt_to_csv import is_already_csv, convert_irregular_txt_to_csv
+from app.services.gemma_txt_to_csv import (
+    is_already_csv,
+    convert_irregular_txt_to_csv,
+    get_genai_client,
+)
 from app.services.csv_import import parse_and_validate_csv
 
 
@@ -30,7 +35,39 @@ async def test_convert_already_csv_text():
 
 
 @pytest.mark.asyncio
+async def test_convert_irregular_txt_missing_api_key(monkeypatch):
+    monkeypatch.setattr("app.services.gemma_txt_to_csv.get_genai_client", lambda: None)
+    with pytest.raises(ValueError, match="GEMINI_API_KEY is not configured"):
+        await convert_irregular_txt_to_csv(b"Bought 50 lanyards from BadgeCraft for Rs 3500")
+
+
+@pytest.mark.asyncio
+async def test_convert_irregular_txt_mocked(monkeypatch):
+    mock_response = MagicMock()
+    mock_response.text = (
+        '{"rows": [{"date": "2026-10-15", "vendor": "BadgeCraft", "category": "Swag", '
+        '"amount_inr": "3500.00", "receipt_ref": "BC-99", "notes": "50 lanyards"}]}'
+    )
+    mock_client = MagicMock()
+    mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
+    monkeypatch.setattr("app.services.gemma_txt_to_csv.get_genai_client", lambda: mock_client)
+
+    csv_str, elapsed_ms, model_id = await convert_irregular_txt_to_csv(
+        b"Bought 50 lanyards from BadgeCraft for Rs 3500"
+    )
+    assert "BadgeCraft" in csv_str
+    assert "3500.00" in csv_str
+
+    res = parse_and_validate_csv(csv_str.encode("utf-8"))
+    assert len(res["accepted"]) == 1
+    assert res["accepted"][0]["vendor"] == "BadgeCraft"
+
+
+@pytest.mark.asyncio
 async def test_convert_irregular_txt_live_gemma():
+    if not get_genai_client():
+        pytest.skip("GEMINI_API_KEY is not configured on this environment; skipping live Gemma test.")
+
     irregular_text = b"""
     Hey organizers, logging 2 purchases from this morning:
     - 2026-10-15: Bought 50 lanyards from BadgeCraft for Rs 3,500. Receipt ref: BC-99. Category is Swag.
@@ -40,7 +77,7 @@ async def test_convert_irregular_txt_live_gemma():
     assert model_id != "direct_csv"
     assert elapsed_ms > 0
     assert "date,vendor,category,amount_inr" in csv_str.lower()
-    
+
     # Run through the standard parse and validate pipeline
     res = parse_and_validate_csv(csv_str.encode("utf-8"))
     assert len(res["accepted"]) == 2

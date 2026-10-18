@@ -172,8 +172,8 @@ async def convert_irregular_txt_to_csv(content: bytes) -> tuple[str, int, str]:
             raise ValueError("Gemma AI could not parse the text into valid structured records. Please ensure all required data (date, vendor, amount) is present.")
 
         if isinstance(records, dict):
-            # In case the model wrapped the list in a key like "expenses" or "items"
-            for k in ("expenses", "items", "data", "transactions", "records"):
+            # In case the model wrapped the list in a key like "expenses", "items", or "rows"
+            for k in ("expenses", "items", "data", "transactions", "records", "rows"):
                 if isinstance(records.get(k), list):
                     records = records[k]
                     break

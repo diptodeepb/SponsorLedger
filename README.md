@@ -284,7 +284,7 @@ pytest tests/ -v
 ```
 
 ```text
-============================== 63 passed in 10.17s ==============================
+============================== 65 passed in 10.04s ==============================
 ```
 
 - `tests/test_money.py`: Exact monetary parsing and absence of floating-point inaccuracies.
