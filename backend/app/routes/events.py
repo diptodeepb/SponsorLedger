@@ -4,9 +4,10 @@ from datetime import datetime, timezone
 from typing import Any
 
 from bson import ObjectId
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Header
 from app.database import get_collection
 from app.schemas import EventCreate, EventUpdate, EventSummary
+from app.services.sandbox import get_or_create_guest_event
 
 router = APIRouter(prefix="/api/events", tags=["events"])
 
@@ -73,9 +74,18 @@ async def _compute_summary(event_id: ObjectId) -> dict:
 
 
 @router.get("", response_model=list[EventSummary])
-async def list_events():
+async def list_events(
+    guest_session: str | None = Header(None, alias="X-Guest-Session"),
+):
+    if guest_session:
+        guest_event = await get_or_create_guest_event(guest_session)
+        summary = await _compute_summary(guest_event["_id"])
+        return [_doc_to_summary(guest_event, summary)]
+
     col = get_collection("events")
-    docs = await col.find().to_list(100)
+    docs = await col.find({"guest_session": None}).to_list(100)
+    if not docs:
+        docs = await col.find().to_list(100)
     result = []
     for doc in docs:
         summary = await _compute_summary(doc["_id"])

@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Scale,
   TrendingUp,
+  RotateCcw,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -24,7 +25,7 @@ import {
   CartesianGrid,
   Cell,
 } from 'recharts';
-import { getEvents, getReports, generateReport, exportReport } from '../lib/api';
+import { getEvents, getReports, generateReport, exportReport, resetSandbox, redirectToDashboard } from '../lib/api';
 import { formatDateTime, adaptPaiseInText } from '../lib/format';
 import { useCurrency } from '../context/CurrencyContext';
 import { LoadingPage, ErrorMessage, PageHeader, EmptyState } from '../components/UI';
@@ -70,6 +71,7 @@ export default function Report() {
   const [currentReport, setCurrentReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [genElapsed, setGenElapsed] = useState(0);
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
   const [checklistStore, setChecklistStore] = useState(() => {
@@ -113,21 +115,39 @@ export default function Report() {
     loadData();
   }, []);
 
+  const isCleanLedger =
+    (!event?.budget_paise || event.budget_paise === 0) &&
+    (!event?.expense_total_paise || event.expense_total_paise === 0) &&
+    (!event?.sponsor_committed_paise || event.sponsor_committed_paise === 0);
+
   const handleGenerate = async () => {
     if (!event) return;
+    if (isCleanLedger) {
+      setError("Cannot generate closeout report on an empty ledger. Please import expenses or load sample data first.");
+      return;
+    }
     setGenerating(true);
     setError(null);
     setSuccessMsg(null);
+    setGenElapsed(0);
+    const startTime = Date.now();
+    const timer = setInterval(() => {
+      setGenElapsed((Date.now() - startTime) / 1000);
+    }, 80);
+
     try {
       const newReport = await generateReport(event.id);
+      clearInterval(timer);
+      const totalSec = ((Date.now() - startTime) / 1000).toFixed(1);
       setCurrentReport(newReport);
       setReports(prev => [newReport, ...prev]);
       const statusText = newReport.ai_status === 'ai_generated'
-        ? `Closeout report synthesized with Gemma (${newReport.model_id || 'gemma-4-26b-a4b-it'}).`
-        : 'Report generated successfully from current ledger records.';
+        ? `Closeout report synthesized with Gemma (${newReport.model_id || 'gemma-4-26b-a4b-it'}) in ${totalSec}s.`
+        : `Report generated successfully from verified ledger records in ${totalSec}s.`;
       setSuccessMsg(statusText);
-      setTimeout(() => setSuccessMsg(null), 6000);
+      setTimeout(() => setSuccessMsg(null), 8000);
     } catch (err) {
+      clearInterval(timer);
       setError(err.message);
     } finally {
       setGenerating(false);
@@ -225,12 +245,13 @@ export default function Report() {
               type="button"
               className="btn-primary"
               onClick={handleGenerate}
-              disabled={generating}
+              disabled={generating || isCleanLedger}
+              title={isCleanLedger ? 'Report generation denied on empty ledger' : 'Generate Closeout Report'}
             >
               {generating ? (
                 <>
                   <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
-                  <span>Synthesizing with Gemma…</span>
+                  <span>Synthesizing ({genElapsed.toFixed(1)}s / ~5.0s)…</span>
                 </>
               ) : (
                 <>
@@ -242,6 +263,26 @@ export default function Report() {
           </div>
         }
       />
+
+      {generating && (
+        <div className="card p-4 border-indigo-500/40 bg-indigo-500/5 dark:bg-indigo-950/20 space-y-2 animate-fade-in">
+          <div className="flex items-center justify-between text-xs font-medium text-indigo-700 dark:text-indigo-300">
+            <span className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-indigo-500 animate-pulse" />
+              <span>Gemma AI synthesizing verified ledger records, audit findings, and budget variances…</span>
+            </span>
+            <span className="font-mono text-indigo-600 dark:text-indigo-300 shrink-0">
+              Estimated: ~5.0s (Elapsed: {genElapsed.toFixed(1)}s)
+            </span>
+          </div>
+          <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600 rounded-full transition-all duration-150 ease-out"
+              style={{ width: `${Math.min(95, (genElapsed / 5.0) * 92)}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {successMsg && (
         <div className="alert-success flex items-center justify-between animate-fade-in">
@@ -258,24 +299,54 @@ export default function Report() {
       )}
 
       {!currentReport ? (
-        <div className="card p-8 sm:p-12 text-center text-slate-500 dark:text-slate-400">
-          <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mx-auto mb-4">
-            <FileSpreadsheet className="w-7 h-7" />
+        isCleanLedger ? (
+          <div className="card p-8 sm:p-12 text-center text-slate-500 dark:text-slate-400 space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400 mx-auto">
+              <FileSpreadsheet className="w-7 h-7" />
+            </div>
+            <div className="max-w-md mx-auto">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Ledger is Empty</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                Your sandbox ledger is currently clean (0 transactions, 0 sponsors, {formatMoney(0)} budget). Closeout report generation is denied on empty ledgers.
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <Link to="/expenses" className="btn-primary btn-sm">
+                Import Expenses
+              </Link>
+              <button
+                type="button"
+                className="btn-secondary btn-sm flex items-center gap-1.5 cursor-pointer"
+                onClick={async () => {
+                  await resetSandbox();
+                  redirectToDashboard();
+                }}
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Load Sample Demo Data</span>
+              </button>
+            </div>
           </div>
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2">No Closeout Report Generated Yet</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6 leading-relaxed">
-            Synthesize verified transactions and audit findings into an executive briefing,
-            actionable priorities, and closing checklist.
-          </p>
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={handleGenerate}
-            disabled={generating}
-          >
-            {generating ? 'Synthesizing Report…' : 'Generate First Report'}
-          </button>
-        </div>
+        ) : (
+          <div className="card p-8 sm:p-12 text-center text-slate-500 dark:text-slate-400">
+            <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mx-auto mb-4">
+              <FileSpreadsheet className="w-7 h-7" />
+            </div>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2">No Closeout Report Generated Yet</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6 leading-relaxed">
+              Synthesize verified transactions and audit findings into an executive briefing,
+              actionable priorities, and closing checklist.
+            </p>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={handleGenerate}
+              disabled={generating}
+            >
+              {generating ? 'Synthesizing Report…' : 'Generate First Report'}
+            </button>
+          </div>
+        )
       ) : (
         <div className="space-y-6">
           {/* Report Metadata & Provenance Banner */}
@@ -318,16 +389,6 @@ export default function Report() {
                   <Download className="w-3.5 h-3.5" />
                   <span>Markdown</span>
                 </a>
-                <a
-                  href={exportReport(currentReport.id, 'html')}
-                  target="_blank"
-                  rel="noreferrer"
-                  download
-                  className="btn-secondary btn-sm"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>HTML</span>
-                </a>
                 <button
                   type="button"
                   onClick={() => window.print()}
@@ -346,12 +407,11 @@ export default function Report() {
               <span className="font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Saved Snapshots:</span>
               <select
                 className="form-input text-xs py-1 px-3 max-w-xs bg-white dark:bg-slate-900"
-                value={currentReport.id}
+                value={currentReport?.id || ''}
                 onChange={(e) => {
                   const selected = reports.find(r => r.id === e.target.value);
                   if (selected) {
                     setCurrentReport(selected);
-                    setCompletedItems({});
                   }
                 }}
               >

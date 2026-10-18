@@ -68,6 +68,12 @@ async def generate_event_report(event_id: str):
     received = sum(s.get("received_paise", 0) for s in sponsors)
     budget = event.get("budget_paise", 0)
 
+    if len(expenses) == 0 and len(sponsors) == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot generate closeout report on an empty ledger. Please import expenses or add sponsors first.",
+        )
+
     totals = {
         "budget_paise": budget,
         "expense_total_paise": expense_total,

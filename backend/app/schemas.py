@@ -156,6 +156,11 @@ class ImportPreviewResponse(BaseModel):
     rejected_rows: list[CSVRowError]
     duplicate_warnings: list[CSVRowWarning]
     import_token: str
+    converted_csv: Optional[str] = None
+    source_type: str = "csv"
+    ai_converted: bool = False
+    elapsed_ms: Optional[int] = None
+    model_id: Optional[str] = None
 
 
 class ImportConfirmRequest(BaseModel):

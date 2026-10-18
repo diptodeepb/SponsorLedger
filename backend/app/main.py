@@ -4,12 +4,12 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import create_indexes, get_collection
-from app.routes import events, sponsors, deliverables, expenses, audit, reports, currencies
+from app.routes import events, sponsors, deliverables, expenses, audit, reports, currencies, sandbox
 from app.schemas import HealthResponse
 
 logger = logging.getLogger(__name__)
@@ -215,6 +215,7 @@ app.include_router(expenses.router)
 app.include_router(audit.router)
 app.include_router(reports.router)
 app.include_router(currencies.router)
+app.include_router(sandbox.router)
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -227,5 +228,45 @@ async def health():
     except Exception:
         db_status = "error"
     return {"status": "ok", "version": "0.1.0", "db": db_status}
+
+
+@app.post("/api/tunnel")
+async def sentry_tunnel(request: Request):
+    """
+    Sentry official tunnel endpoint: proxies frontend Sentry envelope to Sentry ingest.
+    Prevents ad blockers (Brave Shields, uBlock) from blocking Sentry or flagging it as a 3rd-party tracker.
+    """
+    import json
+    import httpx
+    from urllib.parse import urlparse
+    from fastapi import Response
+
+    try:
+        body = await request.body()
+        if not body:
+            return Response(status_code=200, content="OK")
+
+        first_line = body.split(b"\n")[0]
+        header = json.loads(first_line.decode("utf-8"))
+        dsn = header.get("dsn")
+        if not dsn:
+            return Response(status_code=200, content="OK")
+
+        parsed = urlparse(dsn)
+        project_id = parsed.path.strip("/")
+        
+        # Verify the target host belongs to Sentry ingest
+        if not parsed.hostname or not (
+            parsed.hostname.endswith("sentry.io") or parsed.hostname.endswith("ingest.de.sentry.io")
+        ):
+            return Response(status_code=403, content="Invalid target host")
+
+        sentry_url = f"https://{parsed.hostname}/api/{project_id}/envelope/"
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(sentry_url, content=body)
+            return Response(content=resp.content, status_code=resp.status_code)
+    except Exception as e:
+        logger.warning(f"Sentry tunnel proxy warning: {e}")
+        return Response(status_code=200, content="OK")
 
 

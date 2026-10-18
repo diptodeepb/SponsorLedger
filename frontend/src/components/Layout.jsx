@@ -6,6 +6,8 @@ import {
   Receipt,
   ShieldAlert,
   FileSpreadsheet,
+  Scale,
+  ShieldCheck,
   Menu,
   X,
   PanelLeftClose,
@@ -13,6 +15,8 @@ import {
 } from "lucide-react";
 import CurrencySwitcher from "./CurrencySwitcher";
 import ThemeToggle from "./ThemeToggle";
+import SandboxControls from "./SandboxControls";
+import Footer from "./Footer";
 
 function GitHubIcon({ className = "w-3.5 h-3.5" }) {
   return (
@@ -32,7 +36,7 @@ function GitHubIcon({ className = "w-3.5 h-3.5" }) {
 }
 
 const NAV_ITEMS = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/sponsors", label: "Sponsors", icon: Handshake, end: false },
   { to: "/expenses", label: "Expenses", icon: Receipt, end: false },
   { to: "/audit", label: "Audit & Findings", icon: ShieldAlert, end: false },
@@ -75,13 +79,16 @@ export default function Layout({ children }) {
               collapsed ? "md:justify-center justify-between" : "justify-between"
             }`}
           >
-            <span
-              className={`text-sm font-semibold tracking-wide text-slate-800 dark:text-gray-300 select-none ${
-                collapsed ? "md:hidden inline" : "inline"
+            <NavLink
+              to="/"
+              className={`flex items-center gap-2 text-sm font-semibold tracking-wide text-slate-800 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-white transition select-none ${
+                collapsed ? "md:hidden flex" : "flex"
               }`}
+              title="Return to Landing Page"
             >
-              SponsorLedger
-            </span>
+              <img src="/favicon.svg" alt="" className="w-5 h-5 object-contain" />
+              <span>SponsorLedger</span>
+            </NavLink>
 
             {/* Desktop Collapse / Expand Button */}
             <button
@@ -170,6 +177,101 @@ export default function Layout({ children }) {
                 )}
               </NavLink>
             ))}
+
+            {/* Horizontal line dash divider right below Closeout Report */}
+            <div className="border-t border-dashed border-slate-200 dark:border-slate-800 my-1 mx-1" />
+
+            {/* Terms of Service */}
+            <NavLink
+              to="/tos"
+              end={false}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {({ isActive }) => (
+                <div
+                  className={`group relative flex items-center ${
+                    collapsed ? "md:justify-center" : ""
+                  } rounded px-3 py-2 transition ${
+                    isActive
+                      ? "text-indigo-600 dark:text-white"
+                      : "text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  <span
+                    className={`absolute left-0 top-0 h-full w-1 rounded-r bg-indigo-600 dark:bg-white transition-all duration-200 ease-out ${
+                      isActive
+                        ? "opacity-100 scale-y-100"
+                        : "opacity-0 scale-y-50"
+                    }`}
+                    style={{ transformOrigin: "top" }}
+                  />
+
+                  <span className="transition-transform duration-200 group-hover:scale-110 shrink-0">
+                    <Scale size={20} strokeWidth={1.6} />
+                  </span>
+
+                  <span
+                    className={`ml-3 transition-opacity duration-200 truncate ${
+                      collapsed ? "md:hidden" : "inline"
+                    }`}
+                  >
+                    Terms of Service
+                  </span>
+
+                  {collapsed && (
+                    <span className="hidden md:block absolute left-full ml-3 whitespace-nowrap rounded bg-slate-900 dark:bg-black/90 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 z-50 pointer-events-none">
+                      Terms of Service
+                    </span>
+                  )}
+                </div>
+              )}
+            </NavLink>
+
+            {/* Privacy Policy */}
+            <NavLink
+              to="/privacy"
+              end={false}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {({ isActive }) => (
+                <div
+                  className={`group relative flex items-center ${
+                    collapsed ? "md:justify-center" : ""
+                  } rounded px-3 py-2 transition ${
+                    isActive
+                      ? "text-indigo-600 dark:text-white"
+                      : "text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  <span
+                    className={`absolute left-0 top-0 h-full w-1 rounded-r bg-indigo-600 dark:bg-white transition-all duration-200 ease-out ${
+                      isActive
+                        ? "opacity-100 scale-y-100"
+                        : "opacity-0 scale-y-50"
+                    }`}
+                    style={{ transformOrigin: "top" }}
+                  />
+
+                  <span className="transition-transform duration-200 group-hover:scale-110 shrink-0">
+                    <ShieldCheck size={20} strokeWidth={1.6} />
+                  </span>
+
+                  <span
+                    className={`ml-3 transition-opacity duration-200 truncate ${
+                      collapsed ? "md:hidden" : "inline"
+                    }`}
+                  >
+                    Privacy Policy
+                  </span>
+
+                  {collapsed && (
+                    <span className="hidden md:block absolute left-full ml-3 whitespace-nowrap rounded bg-slate-900 dark:bg-black/90 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 z-50 pointer-events-none">
+                      Privacy Policy
+                    </span>
+                  )}
+                </div>
+              )}
+            </NavLink>
           </nav>
 
           {/* Footer info */}
@@ -231,12 +333,20 @@ export default function Layout({ children }) {
             >
               <Menu className="w-5 h-5" />
             </button>
+
+            {/* Left Header: Customize Sandbox Controls */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium hidden md:inline">
+                Customize:
+              </span>
+              <SandboxControls />
+            </div>
           </div>
 
           {/* Right Header: Currency Switcher & Theme Toggle */}
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium hidden md:inline">
                 Currency:
               </span>
               <CurrencySwitcher />
@@ -255,6 +365,9 @@ export default function Layout({ children }) {
         <div className="max-w-7xl w-full mx-auto px-4 sm:px-8 py-6 sm:py-8 flex-1">
           {children}
         </div>
+
+        {/* Global Professional Footer */}
+        <Footer />
       </main>
     </div>
   );
