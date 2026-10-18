@@ -320,6 +320,8 @@ SponsorLedger includes a production [`render.yaml`](render.yaml) blueprint speci
 6. Supply the required secret environment variables prompted by Render:
    - `MONGODB_URI`: Your MongoDB Atlas connection string.
    - `GEMINI_API_KEY`: Your Google AI Studio API key.
+   - `SENTRY_DSN`: *(Optional)* Backend Sentry DSN if error telemetry is enabled.
+   - `VITE_SENTRY_DSN`: *(Optional)* Frontend Sentry DSN for client error tracking and session replay.
 7. Click **Apply**. Render will automatically provision, build, and link both services together!
 
 ---
@@ -354,6 +356,7 @@ If you prefer to configure the services manually via the Render Web UI:
 - **Environment Variables**:
   - `NODE_VERSION`: `22.12.0`
   - `VITE_API_URL`: `https://sponsorledger-backend.onrender.com` (your backend URL without trailing slash)
+  - `VITE_SENTRY_DSN`: *(Optional)* Frontend Sentry DSN for client error tracking and session replay
 - **Redirects & Rewrites (CRITICAL PRECAUTION)**:
   - In your Static Site settings, go to **Redirects/Rewrites**.
   - Add Rule: **Type**: `Rewrite`, **Source**: `/*`, **Destination**: `/index.html`.

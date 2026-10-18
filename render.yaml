@@ -48,3 +48,5 @@ services:
         value: "22.12.0"
       - key: VITE_API_URL
         value: https://sponsorledger-backend.onrender.com
+      - key: VITE_SENTRY_DSN
+        sync: false # Optional: Set in Render Dashboard for frontend error tracking & replay
