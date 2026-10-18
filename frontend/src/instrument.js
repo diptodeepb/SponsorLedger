@@ -38,6 +38,7 @@ if (SENTRY_DSN) {
       'localhost',
       /^\//,
       /^https?:\/\/localhost:8000/,
+      /^https:\/\/.*\.onrender\.com/,
     ],
 
     // Session Replay - only capture on errors, no continuous recording pings
