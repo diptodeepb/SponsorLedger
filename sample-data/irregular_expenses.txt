@@ -1,0 +1,14 @@
+# Hackathon Operational Expenses & Invoices (Unstructured Log)
+# Event: SponsorLedger Hackathon 2026
+
+Hi finance team, here is the unformatted list of expenses and vendor bills to record:
+
+1. Print House delivered the vinyl banners and stage backdrops on 2026-09-01. Total was 4,500 INR. Category: Printing. Receipt ref: RCPT-001. Note: Main stage banner and direction signs.
+2. Campus Catering invoice for 8,200 rupees on 2026-09-02 for volunteer lunch boxes and breakfast snacks. Category: Food. Receipt code: RCPT-002.
+3. Logistics pickup by Quick Movers on 2026-09-03: 1,800 INR for shifting hackathon hardware kits from warehouse to campus. Category: Logistics. No receipt reference was provided.
+4. AV Solutions supplied 4 wireless microphones and two 1000W stage speakers on 2026-09-10. Bill came out to Rs 7,500. Category: Equipment. Ref: RCPT-003.
+5. Stage Decor Co completed floral and stage backdrop lighting on 2026-10-01 for 3,200 INR. Category: Decorations. Invoice ref: RCPT-004.
+6. City Transport provided airport shuttle transfer for VIP keynote speaker on 2026-10-05, costing 2100 inr. Category: Transport. Receipt: RCPT-005.
+7. Goodies Store delivered 250 printed participant t-shirts and hacker stickers on 2026-10-10. Cost: 5,600 INR. Category: Merchandise. Voucher: RCPT-006.
+8. Online Ads paid to Meta & Google for attendee registration campaign on 2026-10-12: 1400.00 rupees. Category: Marketing. (Pending receipt).
+9. Security Services provided 4 overnight guards on 2026-10-15: 4800 inr. Category: Security. Reference: RCPT-007.

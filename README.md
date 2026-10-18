@@ -24,6 +24,7 @@
 
 - [Why SponsorLedger?](#why-sponsorledger)
 - [Core Capabilities](#core-capabilities)
+- [Anonymous Cloned Sandbox](#anonymous-cloned-sandbox)
 - [Modern Design &amp; UX](#modern-design--ux)
 - [Multi-Currency &amp; Live FX Engine](#multi-currency--live-fx-engine)
 - [Architecture &amp; Data Flow](#architecture--data-flow)
@@ -49,19 +50,35 @@ Running a hackathon, student conference, or community summit is exciting, but wr
 - Organizers pay out-of-pocket for last-minute supplies, leaving scattered receipts.
 - Weeks after the event, organizers struggle to confirm: _Did we stay within budget? Did every sponsor transfer their pledged amount? Were all deliverables fulfilled?_
 
-**SponsorLedger** is designed to solve this directly. It combines **clear audit checks** with **live multi-currency conversion** and **Gemma narrative summaries**, giving organizing teams calm and reliable books.
+**SponsorLedger** is designed to solve this directly. It combines **clear audit checks** with **live multi-currency conversion**, an **isolated evaluation sandbox**, and **Gemma narrative summaries**, giving organizing teams calm and reliable books.
 
 ---
 
 ## ⚡ Core Capabilities
 
+- **Anonymous Cloned Sandbox**: Every guest user receives a dedicated, isolated sandbox clone in MongoDB. Multiple concurrent visitors can freely modify, import statements, clear, or reset datasets without cross-user interference.
 - **Automated Financial Checks**: Python rules inspect transactions, unpaid sponsor balances, overdue promises, missing receipts, and potential duplicate expenses.
 - **Accurate Currency Calculations**: All figures are stored in base integer units to prevent floating-point calculation errors when adding and converting currencies.
 - **Multi-Currency Support**: View and input amounts in **USD** (default), **INR**, **EUR**, **GBP**, **JPY**, **CAD**, **AUD**, **CHF**, or **SGD** with live exchange rates.
 - **Evidence-Linked Records**: Every audit finding links directly to the specific expense, sponsor, or deliverable item that triggered it.
+- **Gemma-Powered TXT &amp; CSV Ingestion**: Upload standard CSV bank statements or messy, unstructured `.txt` notes (e.g. WhatsApp notes, receipt blurbs); Google Gemma intelligently maps them into verified tabular rows.
 - **Human-Readable Closeout Reports**: Google Gemma reviews verified numbers to draft executive summaries, recommended next steps, and wrap-up checklists without altering figures.
+- **Ledger Slate Guardrails**: Closeout report generation is securely locked on empty ledgers ($0 budget, 0 transactions) to prevent blank or meaningless summaries.
 - **Reliable Offline Fallback**: If AI access is unavailable or an API key is not set, a clean structured summary report is generated instantly.
-- **CSV Import**: Upload bank or card statements with instant preview, duplicate warnings, and formatting validation before importing.
+
+---
+
+## 🧪 Anonymous Cloned Sandbox
+
+To make live evaluation seamless and leak-free:
+
+- **Isolated Sessions via `X-Guest-Session`**: When a visitor arrives, an ephemeral token is created in browser `localStorage` and sent with all API requests.
+- **Isolated Clones in MongoDB**: Events, sponsors, deliverables, and expenses are tagged with this session ID. Two people evaluating the site simultaneously will never see or overwrite each other's edits.
+- **Three One-Click Sandbox Actions**:
+  1. **Reset to Demo Data**: Instantly repopulates pristine baseline sponsors, deliverables, and 5 sample expenses under the same event.
+  2. **Clear All Sandbox Data**: Wipes all transactions and sets budget to $0.00, providing a 100% clean canvas to test importing custom statements.
+  3. **New Guest Session**: Rotates to a new anonymous session token on demand.
+- **Automated 48-Hour TTL Indexing**: MongoDB automatically purges guest sandboxes after 48 hours of inactivity, keeping cloud storage lean and clean.
 
 ---
 
@@ -70,9 +87,10 @@ Running a hackathon, student conference, or community summit is exciting, but wr
 SponsorLedger is built with modern, state-of-the-art UI craftsmanship:
 
 - **PermLens-Style Desktop Sidebar**: Smoothly collapses from full navigation (`w-64`) to a compact icon-only rail (`w-20`) with left active indicator pills, micro-interaction hover scaling, and floating tooltips, persisted via `localStorage`.
-- **Mobile Responsive Drawer**: Drawer navigation with backdrop blur and touch-friendly controls tailored for smartphones and tablets.
+- **Sandbox Controller Dropdown**: A sleek, dark-mode-optimized `Sandbox ▾` button in the sticky top navbar with high-contrast confirmation dialogs and zero black-on-hover text glitches.
+- **Mobile Responsive Drawer & Navbar**: Responsive drawer navigation with backdrop blur. Extraneous header labels automatically hide on mobile viewports (< 768px) to keep the navigation bar uncluttered.
+- **Themed Custom Scrollbars**: Inset pill-shaped scrollbars across CSV preview tables and All Transactions tables that adapt between dark and light modes.
 - **Dynamic Sticky Top Navbar**: Floating header with an ambient gradient hairline and subtle indigo luminescence, remaining dynamically accessible across all page scroll positions.
-- **Theme-Adapted Custom Scrollbars**: Inset pill-shaped scrollbars that dynamically adapt between dark and light modes.
 - **View Transitions & Dark Mode**: Seamless circular ripple transition when switching between dark slate and light themes.
 - **Responsive Financial Charts**: Recharts visualizations with adaptive tick formatting that prevent text overlapping on small screens while retaining detailed hover tooltips.
 
@@ -235,26 +253,29 @@ Try the end-to-end workflow using the pre-seeded demo dataset:
 
 1. **Executive Dashboard (`/`)**:
    - Inspect overall budget allocation, real-time expenditure, and sponsor pledge collection rates.
-   - Switch the currency in the header (e.g. from `USD` to `INR` or `EUR`) to see all figures instantly update.
+   - Switch the display currency in the header (e.g. from `USD` to `INR` or `EUR`) to see all figures instantly update.
+   - Use the **`Sandbox ▾`** controller on the top left to **Reset to Demo Data**, **Clear All Sandbox Data** ($0 budget, clean slate for fresh imports), or start a **New Guest Session** — each cleanly redirects to `/dashboard` auto-reloaded.
 2. **Sponsors & Agreements (`/sponsors`)**:
    - Review partner tiers, pledged vs deposited amounts, and outstanding collection balances.
    - Expand deliverable obligations (booth space, logo placements, keynote slots) and mark evidence links.
 3. **Expense Ingestion (`/expenses`)**:
-   - Add manual transactions or upload `sample-data/expenses.csv`.
-   - Review the real-time preview showing valid records, duplicate candidate warnings, and missing receipt alerts.
+   - Add manual transactions or upload standard bank statements (`sample-data/expenses.csv`).
+   - Or upload unstructured `.txt` notes (`sample-data/irregular_notes.txt`) to test **Google Gemma AI text-to-CSV ingestion**.
+   - Review the real-time preview table with custom scrollbars showing valid records, duplicate candidate warnings, and missing receipt alerts.
 4. **Audit Dashboard (`/audit`)**:
    - Run the deterministic audit engine.
    - Click any linked evidence badge (`RCPT-001`, `TechCorp`) to inspect the database record in the slide-over modal.
    - Resolve or dismiss findings with audit trail tracking.
 5. **Closeout Report (`/report`)**:
    - Generate an executive briefing synthesized by Gemma.
-   - Complete the closing checklist, inspect verified financial totals, and export as Markdown or printable HTML.
+   - Built-in guardrail: Report generation is safely locked when the ledger is clean/empty ($0 budget, 0 transactions).
+   - Complete the closing checklist, inspect verified financial totals, and export clean briefings in Markdown or printable document format.
 
 ---
 
 ## 🧪 Automated Testing
 
-The complete test suite covers exact integer math, CSV parsing edge cases, audit rules, and `forex-python` currency conversions:
+The complete test suite covers exact integer math, CSV parsing edge cases, audit rules, Gemma text-to-CSV transformation, and `forex-python` currency conversions:
 
 ```bash
 cd backend
@@ -263,13 +284,14 @@ pytest tests/ -v
 ```
 
 ```text
-============================== 59 passed in 5.46s ==============================
+============================== 65 passed in 10.04s ==============================
 ```
 
 - `tests/test_money.py`: Exact monetary parsing and absence of floating-point inaccuracies.
 - `tests/test_csv_import.py`: Header normalisation, size limits, negative amounts, and duplicate detection.
 - `tests/test_audit_rules.py`: Deterministic evaluation across all 7 audit rules and boundary conditions.
 - `tests/test_currencies.py`: `forex-python` rate fetching, conversion round-trips, symbol lookups, and API endpoints.
+- `tests/test_gemma_txt_to_csv.py`: Gemma LLM irregular text-to-CSV transformation parsing, schema enforcement, and fallback handling.
 
 ---
 
@@ -300,6 +322,17 @@ pytest tests/ -v
 - **Publish Directory**: `dist`
 - **Environment Variables**:
   - `VITE_API_URL`: `https://your-backend.onrender.com`
+
+---
+
+## 📬 Contact & Grievance Redressal
+
+For any technical inquiries, feedback, privacy questions, or grievance redressal, you may reach out directly:
+
+- **Maintainer**: Diptodeep Biswas
+- **Direct Email**: [diptodeepbofficial@gmail.com](mailto:diptodeepbofficial@gmail.com)
+- **GitHub Repository**: [github.com/diptodeepb/SponsorLedger](https://github.com/diptodeepb/SponsorLedger)
+- **Issue Tracker**: [github.com/diptodeepb/SponsorLedger/issues](https://github.com/diptodeepb/SponsorLedger/issues)
 
 ---
 

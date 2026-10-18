@@ -68,6 +68,9 @@ async def create_expense(event_id: str, body: ExpenseCreate):
     return _doc_to_out(doc)
 
 
+from app.services.gemma_txt_to_csv import convert_irregular_txt_to_csv
+
+
 @router.post("/api/events/{event_id}/expenses/import/preview", response_model=ImportPreviewResponse)
 async def import_preview(event_id: str, file: UploadFile = File(...)):
     try:
@@ -78,12 +81,30 @@ async def import_preview(event_id: str, file: UploadFile = File(...)):
     if not await events_col.find_one({"_id": eid}):
         raise HTTPException(status_code=404, detail="Event not found")
 
-    if not file.filename or not file.filename.endswith(".csv"):
-        raise HTTPException(status_code=400, detail="Only .csv files are accepted")
+    filename = (file.filename or "").lower()
+    if not (filename.endswith(".csv") or filename.endswith(".txt")):
+        raise HTTPException(status_code=400, detail="Only .csv and .txt files are accepted for expense ingestion")
 
     content = await file.read()
+    converted_csv_text = None
+    ai_converted = False
+    source_type = "csv"
+    elapsed_ms = None
+    model_id = None
+
+    if filename.endswith(".txt"):
+        source_type = "txt"
+        try:
+            converted_csv_text, elapsed_ms, model_id = await convert_irregular_txt_to_csv(content)
+            ai_converted = (model_id != "direct_csv")
+            csv_bytes = converted_csv_text.encode("utf-8")
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+    else:
+        csv_bytes = content
+
     try:
-        result = parse_and_validate_csv(content)
+        result = parse_and_validate_csv(csv_bytes)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -97,6 +118,11 @@ async def import_preview(event_id: str, file: UploadFile = File(...)):
         "rejected_rows": result["errors"],
         "duplicate_warnings": result["duplicate_warnings"],
         "import_token": token,
+        "converted_csv": converted_csv_text,
+        "source_type": source_type,
+        "ai_converted": ai_converted,
+        "elapsed_ms": elapsed_ms,
+        "model_id": model_id,
     }
 
 
@@ -136,3 +162,31 @@ async def import_confirm(event_id: str, body: ImportConfirmRequest):
         await col.insert_many(docs)
 
     return {"imported": len(docs), "batch_id": batch_id}
+
+
+@router.delete("/api/expenses/{expense_id}", status_code=204)
+async def delete_expense(expense_id: str):
+    try:
+        oid = ObjectId(expense_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid expense ID")
+    col = get_collection("expenses")
+    res = await col.delete_one({"_id": oid})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    return None
+
+
+@router.delete("/api/events/{event_id}/expenses", status_code=200)
+async def delete_all_expenses(event_id: str):
+    try:
+        eid = ObjectId(event_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid event ID")
+    col = get_collection("expenses")
+    res = await col.delete_many({"event_id": eid})
+    # Also delete any findings associated with expenses
+    findings_col = get_collection("findings")
+    await findings_col.delete_many({"event_id": eid})
+    return {"deleted_count": res.deleted_count}
+

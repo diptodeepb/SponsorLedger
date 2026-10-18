@@ -12,10 +12,41 @@ class ApiError extends Error {
   }
 }
 
+/**
+ * Anonymous Guest Session ID
+ * Guarantees every guest user has an isolated sandbox clone in MongoDB.
+ */
+export function getGuestSessionId() {
+  let id = localStorage.getItem('sponsorledger_guest_session');
+  if (!id) {
+    id = 'guest_' + (typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36));
+    localStorage.setItem('sponsorledger_guest_session', id);
+  }
+  return id;
+}
+
+export function resetLocalGuestSession() {
+  const newId = 'guest_' + (typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36));
+  localStorage.setItem('sponsorledger_guest_session', newId);
+  return newId;
+}
+
+export function redirectToDashboard() {
+  if (window.location.pathname === '/dashboard') {
+    window.location.reload();
+  } else {
+    window.location.assign('/dashboard');
+  }
+}
+
 async function request(path, options = {}) {
   const url = `${BASE}${path}`;
   const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Guest-Session': getGuestSessionId(),
+      ...options.headers,
+    },
     ...options,
   });
 
@@ -66,6 +97,9 @@ export const importPreview = (eventId, file) => {
   form.append('file', file);
   return fetch(`${BASE}/api/events/${eventId}/expenses/import/preview`, {
     method: 'POST',
+    headers: {
+      'X-Guest-Session': getGuestSessionId(),
+    },
     body: form,
   }).then(async (res) => {
     if (!res.ok) {
@@ -81,6 +115,17 @@ export const importConfirm = (eventId, importToken) =>
     method: 'POST',
     body: JSON.stringify({ import_token: importToken }),
   });
+
+export const deleteExpense = (expenseId) =>
+  request(`/api/expenses/${expenseId}`, { method: 'DELETE' });
+
+export const deleteAllExpenses = (eventId) =>
+  request(`/api/events/${eventId}/expenses`, { method: 'DELETE' });
+
+// ---- Sandbox Controls ----
+export const getSandboxStatus = () => request('/api/sandbox/status');
+export const resetSandbox = () => request('/api/sandbox/reset', { method: 'POST' });
+export const clearSandbox = () => request('/api/sandbox/clear', { method: 'POST' });
 
 // ---- Audit ----
 export const runAudit = (eventId) =>

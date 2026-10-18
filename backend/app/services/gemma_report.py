@@ -208,6 +208,7 @@ async def generate_report(
 ) -> tuple[dict, str]:
     """
     Returns (report_data_dict, ai_status) where ai_status is 'ai_generated' or 'fallback'.
+    Optimized for low latency with minimal thinking mode and async execution.
     """
     cur = event.get("currency", "USD").upper()
     from app.services.exchange_rates import get_exchange_rates
@@ -219,19 +220,26 @@ async def generate_report(
         return _fallback_report(event, totals, findings, rates), "fallback"
 
     try:
-        from google import genai
+        from app.services.gemma_txt_to_csv import get_genai_client
+        client = get_genai_client()
+        if not client:
+            return _fallback_report(event, totals, findings, rates), "fallback"
+
         from google.genai import types
 
-        client = genai.Client(api_key=settings.gemini_api_key)
         payload = _build_payload(event, totals, findings, rates)
 
-        response = client.models.generate_content(
+        response = await client.aio.models.generate_content(
             model=settings.gemma_model,
-            contents=payload,
+            contents=f"{SYSTEM_PROMPT}\n\nFinancial Dataset:\n{payload}",
             config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_PROMPT,
-                max_output_tokens=8192,
-                temperature=0.2,
+                thinking_config=types.ThinkingConfig(
+                    thinking_level=types.ThinkingLevel.MINIMAL,
+                    include_thoughts=False,
+                ),
+                response_mime_type="application/json",
+                max_output_tokens=2048,
+                temperature=0.1,
             ),
         )
 

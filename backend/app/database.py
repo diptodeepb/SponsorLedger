@@ -44,6 +44,14 @@ def get_collection(name: str):
 
 async def create_indexes():
     db = get_db()
+    await db["events"].create_indexes([
+        IndexModel(
+            [("created_at", ASCENDING)],
+            expireAfterSeconds=86400 * 2,  # 48h TTL cleanup for guest sandboxes
+            partialFilterExpression={"guest_session": {"$exists": True, "$type": "string"}},
+        ),
+        IndexModel([("guest_session", ASCENDING)]),
+    ])
     await db["sponsors"].create_indexes([
         IndexModel([("event_id", ASCENDING)]),
     ])
