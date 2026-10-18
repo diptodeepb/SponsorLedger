@@ -1,0 +1,57 @@
+services:
+  # ---------------------------------------------------------------------------
+  # 1. FastAPI Backend Web Service
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: sponsorledger-backend
+    runtime: python
+    region: singapore
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      - key: MONGODB_URI
+        sync: false # Secret: Set in Render Dashboard with your MongoDB Atlas URI
+      - key: MONGODB_DB
+        value: sponsorledger
+      - key: GEMINI_API_KEY
+        sync: false # Secret: Set in Render Dashboard with your Gemini API Key
+      - key: GEMMA_MODEL
+        value: gemma-4-26b-a4b-it
+      - key: ENVIRONMENT
+        value: production
+      - key: SENTRY_DSN
+        sync: false # Optional: Set in Render Dashboard if error telemetry is enabled
+      - key: FRONTEND_ORIGIN
+        fromService:
+          type: web
+          name: sponsorledger
+          property: url
+
+  # ---------------------------------------------------------------------------
+  # 2. Vite React Frontend Static Site (https://sponsorledger.onrender.com)
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: sponsorledger
+    runtime: static
+    region: singapore
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      # Critical SPA fallback: routes all paths (e.g. /dashboard, /report) to index.html
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "22.12.0"
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: sponsorledger-backend
+          property: url

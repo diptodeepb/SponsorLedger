@@ -297,31 +297,67 @@ pytest tests/ -v
 
 ## 🚢 Deployment Guide
 
-### 1. MongoDB Atlas Setup
+### 1. MongoDB Atlas Setup (Prerequisite)
 
 1. Create a free M0 cluster on [MongoDB Atlas](https://www.mongodb.com/atlas).
-2. Create a database user and allow network access (`0.0.0.0/0` for cloud PaaS deployments).
-3. Copy your connection string into `MONGODB_URI`.
+2. Under **Network Access**, add `0.0.0.0/0` (Allow Access from Anywhere) so Render compute instances can connect.
+3. Under **Database Access**, create a database user with read and write privileges.
+4. Copy your connection URI (e.g. `mongodb+srv://<username>:<password>@cluster.mongodb.net/?retryWrites=true&w=majority`).
 
-### 2. Render Web Service (FastAPI Backend)
+---
 
+### Option A: One-Click Render Blueprint (`render.yaml`) (Recommended)
+
+SponsorLedger includes a production [`render.yaml`](render.yaml) blueprint specification that automatically configures both services with correct build commands, start scripts, environment linkages, and SPA routing rewrites:
+
+1. Push your code to your GitHub repository.
+2. Log in to [Render](https://dashboard.render.com).
+3. Click **New +** in the top right and select **Blueprint**.
+4. Connect your `SponsorLedger` repository.
+5. Render will automatically parse `render.yaml` and queue both services in the **Singapore** region:
+   - `sponsorledger-backend` (FastAPI Web Service)
+   - `sponsorledger` (Vite React Static Site yielding `https://sponsorledger.onrender.com`)
+6. Supply the required secret environment variables prompted by Render:
+   - `MONGODB_URI`: Your MongoDB Atlas connection string.
+   - `GEMINI_API_KEY`: Your Google AI Studio API key.
+7. Click **Apply**. Render will automatically provision, build, and link both services together!
+
+---
+
+### Option B: Manual Service Configuration on Render
+
+If you prefer to configure the services manually via the Render Web UI:
+
+#### 1. Backend Web Service
+- **Name**: `sponsorledger-backend`
+- **Region**: `Singapore`
 - **Root Directory**: `backend`
-- **Environment**: Python
+- **Environment / Runtime**: `Python`
 - **Build Command**: `pip install -r requirements.txt`
 - **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- **Health Check Path**: `/health`
 - **Environment Variables**:
-  - `MONGODB_URI`: `<your-connection-string>`
+  - `PYTHON_VERSION`: `3.12.8`
+  - `MONGODB_URI`: `<your-atlas-uri>`
   - `MONGODB_DB`: `sponsorledger`
-  - `FRONTEND_ORIGIN`: `https://your-frontend.onrender.com`
-  - `GEMINI_API_KEY`: `<your-api-key>`
+  - `GEMINI_API_KEY`: `<your-gemini-key>`
+  - `GEMMA_MODEL`: `gemma-4-26b-a4b-it`
+  - `ENVIRONMENT`: `production`
+  - `FRONTEND_ORIGIN`: `https://sponsorledger.onrender.com` (or leave default; automatic regex matches `*.onrender.com`)
 
-### 3. Render Static Site (Vite Frontend)
-
+#### 2. Frontend Static Site
+- **Name**: `sponsorledger` (This reserves `https://sponsorledger.onrender.com`)
+- **Region**: `Singapore`
 - **Root Directory**: `frontend`
 - **Build Command**: `npm ci && npm run build`
 - **Publish Directory**: `dist`
 - **Environment Variables**:
-  - `VITE_API_URL`: `https://your-backend.onrender.com`
+  - `NODE_VERSION`: `22.12.0`
+  - `VITE_API_URL`: `https://sponsorledger-backend.onrender.com` (your backend URL without trailing slash)
+- **Redirects & Rewrites (CRITICAL PRECAUTION)**:
+  - In your Static Site settings, go to **Redirects/Rewrites**.
+  - Add Rule: **Type**: `Rewrite`, **Source**: `/*`, **Destination**: `/index.html`.
+  - _(Without this rule, direct navigation or hard-refreshing `/dashboard`, `/report`, or `/expenses` will return a 404 Not Found)._
 
 ---
 
