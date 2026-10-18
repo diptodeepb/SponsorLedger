@@ -165,17 +165,26 @@ async def lifespan(app: FastAPI):
             exc,
         )
 
-    if settings.sentry_dsn:
-        import sentry_sdk
-        sentry_sdk.init(
-            dsn=settings.sentry_dsn,
-            traces_sample_rate=0.2,
-            profiles_sample_rate=0.1,
-        )
-        logger.info("Sentry initialized")
-
     yield
     # Shutdown (nothing to tear down for now)
+
+
+# ---------------------------------------------------------------------------
+# Sentry Initialization
+# ---------------------------------------------------------------------------
+# Note: Initialize Sentry before the FastAPI app is created so that
+# FastAPI and Starlette auto-instrumentation hooks attach cleanly.
+# Continuous profiling is omitted to prevent quota exhaustion.
+if settings.sentry_dsn:
+    import sentry_sdk
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        traces_sample_rate=settings.sentry_traces_sample_rate,
+        data_collection={"user_info": True},
+        environment=settings.environment,
+        release="sponsorledger-backend@0.1.0",
+    )
+    logger.info("Sentry initialized for FastAPI backend")
 
 
 # ---------------------------------------------------------------------------
@@ -195,7 +204,7 @@ app.add_middleware(
     allow_origins=origins,
     allow_credentials=False,
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
+    allow_headers=["*"],
 )
 
 # Routers
@@ -218,3 +227,5 @@ async def health():
     except Exception:
         db_status = "error"
     return {"status": "ok", "version": "0.1.0", "db": db_status}
+
+

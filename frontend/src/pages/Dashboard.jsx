@@ -8,7 +8,6 @@ import {
   Clock,
   ShieldAlert,
   ArrowRight,
-  TrendingDown,
   Sparkles,
   Search,
 } from 'lucide-react';

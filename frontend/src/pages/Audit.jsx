@@ -4,12 +4,8 @@ import {
   ShieldAlert,
   ShieldCheck,
   Search,
-  CheckCircle2,
-  XCircle,
   RotateCcw,
-  Sparkles,
   Link as LinkIcon,
-  AlertTriangle,
   Lightbulb,
   FileSpreadsheet,
   Check,
@@ -22,7 +18,7 @@ import { useCurrency } from '../context/CurrencyContext';
 import { LoadingPage, ErrorMessage, PageHeader, EmptyState, Modal } from '../components/UI';
 
 export default function Audit() {
-  const { formatMoney, currency, currencySymbol } = useCurrency();
+  const { formatMoney } = useCurrency();
   const [event, setEvent] = useState(null);
   const [findings, setFindings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,34 +42,32 @@ export default function Audit() {
   const [deliverablesCache, setDeliverablesCache] = useState([]);
 
   useEffect(() => {
+    async function loadData() {
+      try {
+        const events = await getEvents();
+        if (events.length > 0) {
+          const ev = events[0];
+          setEvent(ev);
+          const [fList, expList, spList, delList] = await Promise.all([
+            getFindings(ev.id),
+            getExpenses(ev.id).catch(() => []),
+            getSponsors(ev.id).catch(() => []),
+            getDeliverables(ev.id).catch(() => []),
+          ]);
+          setFindings(fList);
+          setExpensesCache(expList);
+          setSponsorsCache(spList);
+          setDeliverablesCache(delList);
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
     loadData();
   }, []);
 
-  async function loadData() {
-    setLoading(true);
-    setError(null);
-    try {
-      const events = await getEvents();
-      if (events.length > 0) {
-        const ev = events[0];
-        setEvent(ev);
-        const [fList, expList, spList, delList] = await Promise.all([
-          getFindings(ev.id),
-          getExpenses(ev.id).catch(() => []),
-          getSponsors(ev.id).catch(() => []),
-          getDeliverables(ev.id).catch(() => []),
-        ]);
-        setFindings(fList);
-        setExpensesCache(expList);
-        setSponsorsCache(spList);
-        setDeliverablesCache(delList);
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   const handleRunAudit = async () => {
     if (!event) return;

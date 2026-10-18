@@ -6,10 +6,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
-  FileText,
-  AlertCircle,
   X,
-  CreditCard,
   Check,
 } from 'lucide-react';
 import { getEvents, getExpenses, createExpense, importPreview, importConfirm } from '../lib/api';
@@ -20,14 +17,14 @@ import { LoadingPage, ErrorMessage, Modal, PageHeader, EmptyState } from '../com
 // ---- Single Expense Form ----
 function ExpenseForm({ onSave, onCancel, loading }) {
   const { currency, currencySymbol, convertToPaise } = useCurrency();
-  const [form, setForm] = useState({
+  const [form, setForm] = useState(() => ({
     date: new Date().toISOString().split('T')[0],
     vendor: '',
     category: '',
     amount: '',
     receipt_ref: '',
     notes: '',
-  });
+  }));
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   const handleSubmit = (e) => {
@@ -335,7 +332,7 @@ function CSVImport({ eventId, onImported }) {
 
 // ---- Main Page ----
 export default function Expenses() {
-  const { formatMoney, currency, currencySymbol } = useCurrency();
+  const { formatMoney, currencySymbol } = useCurrency();
   const [eventId, setEventId] = useState(null);
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);

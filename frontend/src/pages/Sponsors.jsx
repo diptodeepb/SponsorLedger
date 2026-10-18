@@ -8,10 +8,7 @@ import {
   ChevronDown,
   ChevronUp,
   ExternalLink,
-  Calendar,
-  AlertCircle,
   Clock,
-  Sparkles,
 } from 'lucide-react';
 import {
   getEvents,
@@ -133,14 +130,14 @@ function SponsorForm({ initial = {}, onSave, onCancel, loading }) {
 
 // ---- Deliverable Form ----
 function DeliverableForm({ sponsors, initial = {}, onSave, onCancel, loading }) {
-  const [form, setForm] = useState({
+  const [form, setForm] = useState(() => ({
     sponsor_id: initial.sponsor_id || (sponsors[0] ? sponsors[0].id : ''),
     description: initial.description || '',
     due_date: initial.due_date || new Date().toISOString().split('T')[0],
     evidence_url: initial.evidence_url || '',
     status: initial.status || 'pending',
     notes: initial.notes || '',
-  });
+  }));
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
@@ -231,7 +228,7 @@ function DeliverableForm({ sponsors, initial = {}, onSave, onCancel, loading }) 
 }
 
 export default function Sponsors() {
-  const { formatMoney, currency, currencySymbol } = useCurrency();
+  const { formatMoney } = useCurrency();
   const [event, setEvent] = useState(null);
   const [sponsors, setSponsors] = useState([]);
   const [deliverables, setDeliverables] = useState([]);
@@ -271,7 +268,30 @@ export default function Sponsors() {
   };
 
   useEffect(() => {
-    reload();
+    let active = true;
+    async function init() {
+      try {
+        const events = await getEvents();
+        if (active && events.length > 0) {
+          const ev = events[0];
+          setEvent(ev);
+          const [spList, dList] = await Promise.all([
+            getSponsors(ev.id),
+            getDeliverables(ev.id),
+          ]);
+          setSponsors(spList);
+          setDeliverables(dList);
+        }
+      } catch (err) {
+        if (active) setError(err.message);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    init();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleSaveSponsor = async (data) => {

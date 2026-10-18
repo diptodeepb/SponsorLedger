@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     gemma_model: str = Field(default="gemma-4-26b-a4b-it", alias="GEMMA_MODEL")
     frontend_origin: str = Field(default="http://localhost:5173", alias="FRONTEND_ORIGIN")
     sentry_dsn: str = Field(default="", alias="SENTRY_DSN")
+    sentry_traces_sample_rate: float = Field(default=0.2, alias="SENTRY_TRACES_SAMPLE_RATE")
+    environment: str = Field(default="development", alias="ENVIRONMENT")
     port: int = Field(default=8000, alias="PORT")
 
     model_config = {
