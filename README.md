@@ -314,9 +314,9 @@ SponsorLedger includes a production [`render.yaml`](render.yaml) blueprint speci
 2. Log in to [Render](https://dashboard.render.com).
 3. Click **New +** in the top right and select **Blueprint**.
 4. Connect your `SponsorLedger` repository.
-5. Render will automatically parse `render.yaml` and queue both services in the **Singapore** region:
-   - `sponsorledger-backend` (FastAPI Web Service)
-   - `sponsorledger` (Vite React Static Site yielding `https://sponsorledger.onrender.com`)
+5. Render will automatically parse `render.yaml` and queue both services:
+   - `sponsorledger-backend` (FastAPI Web Service in **Singapore**)
+   - `sponsorledger` (Vite React Static Site on Render Global CDN yielding `https://sponsorledger.onrender.com`)
 6. Supply the required secret environment variables prompted by Render:
    - `MONGODB_URI`: Your MongoDB Atlas connection string.
    - `GEMINI_API_KEY`: Your Google AI Studio API key.
