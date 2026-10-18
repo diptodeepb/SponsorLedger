@@ -1,7 +1,38 @@
-"""Deterministic audit engine — pure functions, no FastAPI/DB dependencies."""
+"""Deterministic audit rules engine for event finances."""
 from __future__ import annotations
 from datetime import date, datetime, timezone
 from typing import Any
+
+from app.services.exchange_rates import FALLBACK_USD_RATES
+
+CURRENCY_SYMBOLS = {
+    "INR": "₹",
+    "USD": "$",
+    "EUR": "€",
+    "GBP": "£",
+    "CAD": "CA$",
+    "AUD": "A$",
+    "JPY": "¥",
+    "CHF": "CHF ",
+    "SGD": "S$",
+}
+
+
+def _get_sym(currency: str = "USD") -> str:
+    return CURRENCY_SYMBOLS.get((currency or "USD").upper(), f"{(currency or 'USD').upper()} ")
+
+
+def format_money_for_audit(amount_paise: int, currency: str = "USD", rates: dict | None = None) -> str:
+    cur = (currency or "USD").upper()
+    sym = _get_sym(cur)
+    r = rates or FALLBACK_USD_RATES
+    inr_val = (amount_paise or 0) / 100.0
+    if cur == "INR":
+        return f"₹{inr_val:,.2f}"
+    inr_rate = r.get("INR", 86.50)
+    target_rate = r.get(cur, 1.0)
+    val = (inr_val / inr_rate) * target_rate
+    return f"{sym}{val:,.2f}"
 
 
 # ---------------------------------------------------------------------------
@@ -19,19 +50,23 @@ def _today() -> date:
 # Core rule functions
 # ---------------------------------------------------------------------------
 def check_budget_overrun(
-    event: dict, expenses: list[dict]
+    event: dict, expenses: list[dict], rates: dict | None = None
 ) -> dict | None:
     budget = event.get("budget_paise", 0)
     total = sum(e.get("amount_paise", 0) for e in expenses)
+    cur = (event.get("currency") or "USD").upper()
     if total > budget:
         diff = total - budget
+        b_str = format_money_for_audit(budget, cur, rates)
+        t_str = format_money_for_audit(total, cur, rates)
+        d_str = format_money_for_audit(diff, cur, rates)
         return {
             "rule_code": "BUDGET_OVERRUN",
             "severity": "high",
             "title": "Budget exceeded",
             "explanation": (
-                f"Recorded expenses total ₹{total/100:.2f} against a budget of "
-                f"₹{budget/100:.2f}. The overspend is ₹{diff/100:.2f}."
+                f"Recorded expenses total {t_str} against an allocated budget of "
+                f"{b_str}. The overrun amount is {d_str}."
             ),
             "source_refs": [{"type": "expense", "id": str(e["_id"])} for e in expenses],
             "suggested_action": "Review expense categories and verify whether all rows are correctly recorded.",
@@ -39,8 +74,11 @@ def check_budget_overrun(
     return None
 
 
-def check_sponsor_balances(sponsors: list[dict]) -> list[dict]:
+def check_sponsor_balances(
+    sponsors: list[dict], currency: str = "USD", rates: dict | None = None
+) -> list[dict]:
     findings = []
+    cur = (currency or "USD").upper()
     for s in sponsors:
         committed = s.get("committed_paise", 0)
         received = s.get("received_paise", 0)
@@ -49,28 +87,34 @@ def check_sponsor_balances(sponsors: list[dict]) -> list[dict]:
 
         if committed > received:
             outstanding = committed - received
+            c_str = format_money_for_audit(committed, cur, rates)
+            r_str = format_money_for_audit(received, cur, rates)
+            o_str = format_money_for_audit(outstanding, cur, rates)
             findings.append({
                 "rule_code": "SPONSOR_BALANCE_DUE",
                 "severity": "high" if outstanding > 100_000 else "medium",
                 "title": f"Outstanding balance for {name}",
                 "explanation": (
-                    f"Sponsor '{name}' committed ₹{committed/100:.2f} but only "
-                    f"₹{received/100:.2f} has been recorded as received. "
-                    f"Outstanding: ₹{outstanding/100:.2f}."
+                    f"Sponsor '{name}' committed {c_str} but only "
+                    f"{r_str} has been recorded as received. "
+                    f"Outstanding balance: {o_str}."
                 ),
                 "source_refs": [{"type": "sponsor", "id": sid}],
                 "suggested_action": "Confirm payment status with the sponsor and update the received amount.",
             })
         elif received > committed:
             excess = received - committed
+            c_str = format_money_for_audit(committed, cur, rates)
+            r_str = format_money_for_audit(received, cur, rates)
+            e_str = format_money_for_audit(excess, cur, rates)
             findings.append({
                 "rule_code": "SPONSOR_OVERPAYMENT",
                 "severity": "medium",
                 "title": f"Possible overpayment recorded for {name}",
                 "explanation": (
-                    f"Sponsor '{name}' received ₹{received/100:.2f} which exceeds commitment "
-                    f"of ₹{committed/100:.2f} by ₹{excess/100:.2f}. This may be a recording error "
-                    f"or an additional contribution."
+                    f"Sponsor '{name}' received {r_str} which exceeds commitment "
+                    f"of {c_str} by {e_str}. This may be an extra contribution "
+                    f"or a duplicate receipt entry."
                 ),
                 "source_refs": [{"type": "sponsor", "id": sid}],
                 "suggested_action": "Verify the recorded amounts and update the commitment if necessary.",
@@ -78,19 +122,22 @@ def check_sponsor_balances(sponsors: list[dict]) -> list[dict]:
     return findings
 
 
-def check_missing_receipts(expenses: list[dict]) -> list[dict]:
+def check_missing_receipts(
+    expenses: list[dict], currency: str = "USD", rates: dict | None = None
+) -> list[dict]:
     findings = []
+    cur = (currency or "USD").upper()
     for e in expenses:
         ref = e.get("receipt_ref") or ""
         if not ref.strip():
+            amt_str = format_money_for_audit(e.get("amount_paise", 0), cur, rates)
             findings.append({
                 "rule_code": "MISSING_RECEIPT_REF",
                 "severity": "low",
-                "title": f"No receipt reference for expense",
+                "title": "No receipt reference for expense",
                 "explanation": (
                     f"Expense '{e.get('vendor', 'Unknown')}' on {e.get('date', '?')} "
-                    f"(₹{e.get('amount_paise', 0)/100:.2f}) has no receipt reference. "
-                    "This does not necessarily indicate an invalid expense."
+                    f"({amt_str}) does not have an attached receipt reference number."
                 ),
                 "source_refs": [{"type": "expense", "id": str(e["_id"])}],
                 "suggested_action": "Locate and record the receipt reference or note that it is unavailable.",
@@ -98,13 +145,16 @@ def check_missing_receipts(expenses: list[dict]) -> list[dict]:
     return findings
 
 
-def check_possible_duplicates(expenses: list[dict]) -> list[dict]:
+def check_possible_duplicates(
+    expenses: list[dict], currency: str = "USD", rates: dict | None = None
+) -> list[dict]:
     findings = []
     seen: list[dict] = []
+    cur = (currency or "USD").upper()
     for e in expenses:
         vendor_n = _normalize(e.get("vendor", ""))
         amount = e.get("amount_paise", 0)
-        receipt = e.get("receipt_ref", "").strip()
+        receipt = (e.get("receipt_ref") or "").strip()
         e_date = e.get("date")
         e_id = str(e["_id"])
 
@@ -112,7 +162,7 @@ def check_possible_duplicates(expenses: list[dict]) -> list[dict]:
             prev_id = str(prev["_id"])
             prev_vendor = _normalize(prev.get("vendor", ""))
             prev_amount = prev.get("amount_paise", 0)
-            prev_receipt = prev.get("receipt_ref", "").strip()
+            prev_receipt = (prev.get("receipt_ref") or "").strip()
             prev_date = prev.get("date")
 
             # Same receipt ref (non-empty)
@@ -139,13 +189,14 @@ def check_possible_duplicates(expenses: list[dict]) -> list[dict]:
                     d1 = e_date if isinstance(e_date, date) else date.fromisoformat(str(e_date))
                     d2 = prev_date if isinstance(prev_date, date) else date.fromisoformat(str(prev_date))
                     if abs((d1 - d2).days) <= 1:
+                        amt_str = format_money_for_audit(amount, cur, rates)
                         findings.append({
                             "rule_code": "POSSIBLE_DUPLICATE",
                             "severity": "medium",
                             "title": "Possible duplicate: same vendor, amount, and nearby date",
                             "explanation": (
                                 f"Two expenses from '{e.get('vendor')}' for "
-                                f"₹{amount/100:.2f} occurred on nearby dates ({d2} and {d1}). "
+                                f"{amt_str} occurred on nearby dates ({d2} and {d1}). "
                                 "These may be the same expense entered twice."
                             ),
                             "source_refs": [
@@ -192,7 +243,7 @@ def check_overdue_deliverables(deliverables: list[dict]) -> list[dict]:
 def check_missing_categories(expenses: list[dict]) -> list[dict]:
     findings = []
     for e in expenses:
-        cat = e.get("category", "").strip().lower()
+        cat = (e.get("category") or "").strip().lower()
         if not cat or cat in ("unknown", "other", ""):
             findings.append({
                 "rule_code": "MISSING_CATEGORY",
@@ -216,6 +267,7 @@ def run_audit(
     expenses: list[dict],
     sponsors: list[dict],
     deliverables: list[dict],
+    rates: dict | None = None,
 ) -> list[dict]:
     """Run all deterministic rules and return a flat list of finding dicts."""
     from bson import ObjectId
@@ -233,13 +285,14 @@ def run_audit(
 
     findings: list[dict] = []
 
-    result = check_budget_overrun(event, expenses)
+    cur = (event.get("currency") or "USD").upper()
+    result = check_budget_overrun(event, expenses, rates)
     if result:
         findings.append(result)
 
-    findings.extend(check_sponsor_balances(sponsors))
-    findings.extend(check_missing_receipts(expenses))
-    findings.extend(check_possible_duplicates(expenses))
+    findings.extend(check_sponsor_balances(sponsors, cur, rates))
+    findings.extend(check_missing_receipts(expenses, cur, rates))
+    findings.extend(check_possible_duplicates(expenses, cur, rates))
     findings.extend(check_overdue_deliverables(deliverables))
     findings.extend(check_missing_categories(expenses))
 

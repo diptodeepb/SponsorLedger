@@ -16,13 +16,13 @@ const SentryRoutes = Sentry.withSentryReactRouterV7Routing(Routes);
 
 function SentryFallback({ error, resetError }) {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-slate-900 border border-red-500/30 rounded-2xl p-6 shadow-2xl text-center">
-        <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 font-bold text-xl">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex items-center justify-center p-6">
+      <div className="max-w-md w-full bg-white dark:bg-slate-900 border border-red-500/30 rounded-2xl p-6 shadow-2xl text-center">
+        <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 dark:text-red-400 font-bold text-xl">
           !
         </div>
-        <h2 className="text-xl font-bold text-white mb-2">Something went wrong</h2>
-        <p className="text-sm text-slate-400 mb-6">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Something went wrong</h2>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
           {error?.message || 'An unexpected runtime error was caught and logged.'}
         </p>
         <button

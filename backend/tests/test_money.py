@@ -1,15 +1,15 @@
-"""Tests for money helpers — paise conversion correctness."""
+"""Tests for money helpers: currency conversion correctness."""
 import pytest
 from decimal import Decimal
 from app.services.csv_import import _parse_paise
 
 
 class TestMoneyHelpers:
-    """Verify that monetary parsing produces exact integer paise values."""
+    """Verify that monetary parsing produces exact integer values."""
 
     CASES = [
-        ("0.01", 1),            # ₹0.01 = 1 paise
-        ("1", 100),             # ₹1 = 100 paise
+        ("0.01", 1),            # 0.01 = 1 unit
+        ("1", 100),             # 1 = 100 units
         ("1.00", 100),
         ("1.50", 150),
         ("1234.56", 123456),
@@ -24,7 +24,7 @@ class TestMoneyHelpers:
         assert result == expected, f"_parse_paise({raw!r}) = {result}, expected {expected}"
 
     def test_no_floating_point_error(self):
-        # 0.1 + 0.2 ≠ 0.3 in IEEE 754 — our paise must be exact
+        # 0.1 + 0.2 != 0.3 in IEEE 754: integer base math must be exact
         result = _parse_paise("0.10") + _parse_paise("0.20")
         assert result == _parse_paise("0.30")
 

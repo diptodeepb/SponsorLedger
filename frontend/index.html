@@ -1,13 +1,26 @@
 <!doctype html>
-<html lang="en" class="dark bg-slate-950">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="SponsorLedger: Evidence-linked financial audit tool for event organisers. Reconcile budgets, sponsors, deliverables, and expenses with pure Python deterministic rules." />
+    <meta name="description" content="SponsorLedger: Event financial auditing, sponsor deliverables, and budget tracking." />
     <title>SponsorLedger</title>
+    <script>
+      (function() {
+        try {
+          const stored = localStorage.getItem('theme');
+          const isDark = stored ? stored === 'dark' : true;
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (_) {}
+      })();
+    </script>
   </head>
-  <body class="bg-slate-950 text-slate-100">
+  <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen antialiased selection:bg-indigo-500/30 selection:text-indigo-900 dark:selection:text-indigo-200">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

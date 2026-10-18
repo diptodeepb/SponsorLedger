@@ -1,4 +1,4 @@
-"""Expenses routes — list, create, CSV import preview/confirm."""
+"""Expenses routes: list, create, CSV import preview and confirm."""
 from __future__ import annotations
 import uuid
 from datetime import datetime, timezone

@@ -1,18 +1,33 @@
-"""Report export service — Markdown and HTML export for the closeout report."""
+"""Report export service for Markdown and HTML closeout summaries."""
 from __future__ import annotations
 from datetime import datetime
 
+CURRENCY_SYMBOLS = {
+    "INR": "₹",
+    "USD": "$",
+    "EUR": "€",
+    "GBP": "£",
+    "CAD": "CA$",
+    "AUD": "A$",
+    "JPY": "¥",
+    "CHF": "CHF ",
+    "SGD": "S$",
+}
 
-def format_inr(paise: int) -> str:
-    return f"₹{paise/100:,.2f}"
+
+def format_currency(paise: int, currency: str = "INR") -> str:
+    cur = currency.upper() if currency else "INR"
+    sym = CURRENCY_SYMBOLS.get(cur, f"{cur} ")
+    return f"{sym}{(paise or 0)/100:,.2f}"
 
 
 def report_to_markdown(report: dict, event: dict) -> str:
     lines = []
     now = report.get("generated_at", datetime.utcnow())
     ai_status = report.get("ai_status", "unknown")
+    cur = event.get("currency", "INR")
 
-    lines.append(f"# SponsorLedger Closeout Report")
+    lines.append("# SponsorLedger Closeout Report")
     lines.append(f"**Event**: {event.get('name', 'Event')}")
     lines.append(f"**Generated**: {now}")
     lines.append(f"**Report type**: {'AI-assisted' if ai_status == 'ai_generated' else 'Deterministic fallback'}")
@@ -20,13 +35,13 @@ def report_to_markdown(report: dict, event: dict) -> str:
 
     totals = report.get("totals_snapshot", {})
     lines.append("## Financial Summary")
-    lines.append(f"| Metric | Amount |")
-    lines.append(f"|--------|--------|")
-    lines.append(f"| Budget | {format_inr(totals.get('budget_paise', 0))} |")
-    lines.append(f"| Total Expenses | {format_inr(totals.get('expense_total_paise', 0))} |")
-    lines.append(f"| Sponsor Committed | {format_inr(totals.get('sponsor_committed_paise', 0))} |")
-    lines.append(f"| Sponsor Received | {format_inr(totals.get('sponsor_received_paise', 0))} |")
-    lines.append(f"| Unpaid Balance | {format_inr(totals.get('unpaid_balance_paise', 0))} |")
+    lines.append("| Metric | Amount |")
+    lines.append("|---|---|")
+    lines.append(f"| Allocated Budget | {format_currency(totals.get('budget_paise', 0), cur)} |")
+    lines.append(f"| Total Expenses | {format_currency(totals.get('expense_total_paise', 0), cur)} |")
+    lines.append(f"| Sponsor Committed | {format_currency(totals.get('sponsor_committed_paise', 0), cur)} |")
+    lines.append(f"| Sponsor Received | {format_currency(totals.get('sponsor_received_paise', 0), cur)} |")
+    lines.append(f"| Unpaid Balance | {format_currency(totals.get('unpaid_balance_paise', 0), cur)} |")
     lines.append("")
 
     summary = report.get("executive_summary", "")
@@ -68,7 +83,7 @@ def report_to_markdown(report: dict, event: dict) -> str:
 
 def report_to_html(report: dict, event: dict) -> str:
     md = report_to_markdown(report, event)
-    # Simple conversion — for MVP we wrap in a print-friendly HTML page
+    # Simple conversion: wrap in a print-friendly HTML page
     body = md.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     # Convert basic Markdown-ish headings
     import re
@@ -84,7 +99,7 @@ def report_to_html(report: dict, event: dict) -> str:
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>SponsorLedger Report — {event.get('name', 'Event')}</title>
+  <title>SponsorLedger Report: {event.get('name', 'Event')}</title>
   <style>
     body {{ font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; color: #1e293b; line-height: 1.6; }}
     h1 {{ color: #0f172a; border-bottom: 2px solid #0ea5e9; padding-bottom: 8px; }}

@@ -127,7 +127,7 @@ async def seed_demo_data():
             "date": "2026-09-03",
             "vendor": "Print House",
             "category": "Printing",
-            "amount_paise": 4_50_000,   # ₹4,500 — possible duplicate
+            "amount_paise": 4_50_000,   # ₹4,500 (possible duplicate)
             "receipt_ref": "RCPT-001",
             "notes": "Possible duplicate sample row",
             "created_at": now,

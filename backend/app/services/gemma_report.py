@@ -24,53 +24,101 @@ class GemmaReportSchema(BaseModel):
     limitations: list[str]
 
 
-SYSTEM_PROMPT = """You are SponsorLedger's report-writing assistant.
-Use only the facts and findings in the supplied JSON.
-Do not recalculate or invent financial figures, names, dates, evidence,
-receipts, payments, or causes.
+CURRENCY_SYMBOLS = {
+    "INR": "₹",
+    "USD": "$",
+    "EUR": "€",
+    "GBP": "£",
+    "CAD": "CA$",
+    "AUD": "A$",
+    "JPY": "¥",
+    "CHF": "CHF ",
+    "SGD": "S$",
+}
+
+
+from app.services.exchange_rates import FALLBACK_USD_RATES
+
+
+def format_currency_amount(amount_paise: int, currency: str = "USD", rates: dict | None = None) -> str:
+    cur = currency.upper() if currency else "USD"
+    sym = CURRENCY_SYMBOLS.get(cur, f"{cur} ")
+    r = rates or FALLBACK_USD_RATES
+    inr_val = (amount_paise or 0) / 100.0
+    inr_rate = r.get("INR", 86.50)
+    target_rate = r.get(cur, 1.0)
+    val = (inr_val / inr_rate) * target_rate
+    return f"{sym}{val:,.2f}"
+
+
+
+SYSTEM_PROMPT = """You are SponsorLedger's financial report writer.
+Write a clear, professional executive summary of the event finances.
+Express all monetary amounts strictly using the provided formatted currency values (for example: $25,000.00, ₹25,000.00).
+Never output internal subunit words like 'paise' or 'cents', and never invent financial numbers.
+Use plain, human, accessible business language without robotic filler, em-dashes, or dramatic phrasing.
+Do not recalculate or invent financial figures, names, dates, evidence, receipts, payments, or causes.
 Do not call a finding fraud, theft, or misconduct.
 Distinguish recorded facts from hypotheses and suggestions.
 For every priority issue, preserve its finding ID and source references.
-If information is missing, say it is missing.
-Return only JSON matching the required response schema with fields:
+If information is missing, clearly state that it is missing.
+Return only valid JSON matching the required response schema with fields:
 executive_summary (string), priorities (array of objects with finding_id, why_it_matters, recommended_next_step),
 closing_checklist (array of strings), limitations (array of strings)."""
 
 
-def _build_payload(event: dict, totals: dict, findings: list[dict]) -> str:
-    """Build the minimal structured payload sent to the model."""
+def _build_payload(event: dict, totals: dict, findings: list[dict], rates: dict | None = None) -> str:
+    """Build the clean structured payload sent to the model."""
+    cur = event.get("currency", "USD").upper()
+    sym = CURRENCY_SYMBOLS.get(cur, f"{cur} ")
+    budget_raw = totals.get("budget_paise", 0)
+    spent_raw = totals.get("expense_total_paise", 0)
+    committed_raw = totals.get("sponsor_committed_paise", 0)
+    received_raw = totals.get("sponsor_received_paise", 0)
+    unpaid_raw = totals.get("unpaid_balance_paise", max(committed_raw - received_raw, 0))
+
+    seen_finding_keys = set()
+    cleaned_findings = []
+    for f in findings:
+        key = (f.get("rule_code"), tuple(sorted(str(r.get("id", "")) for r in f.get("source_refs", []))))
+        if key in seen_finding_keys:
+            continue
+        seen_finding_keys.add(key)
+        cleaned_findings.append({
+            "id": f["id"],
+            "rule_code": f["rule_code"],
+            "severity": f["severity"],
+            "title": f["title"],
+            "explanation": f["explanation"],
+            "source_refs": [str(r.get("id", "")) for r in f.get("source_refs", [])],
+        })
+
     payload = {
         "event": {
             "name": event.get("name", "Event"),
-            "currency": event.get("currency", "INR"),
+            "currency": cur,
+            "currency_symbol": sym,
         },
-        "verified_totals": {
-            "budget_paise": totals.get("budget_paise", 0),
-            "expense_total_paise": totals.get("expense_total_paise", 0),
-            "sponsor_committed_paise": totals.get("sponsor_committed_paise", 0),
-            "sponsor_received_paise": totals.get("sponsor_received_paise", 0),
+        "financial_summary": {
+            "currency": cur,
+            "budget": format_currency_amount(budget_raw, cur, rates),
+            "total_expenses": format_currency_amount(spent_raw, cur, rates),
+            "sponsor_committed": format_currency_amount(committed_raw, cur, rates),
+            "sponsor_received": format_currency_amount(received_raw, cur, rates),
+            "unpaid_sponsor_balance": format_currency_amount(unpaid_raw, cur, rates),
         },
-        "findings": [
-            {
-                "id": f["id"],
-                "rule_code": f["rule_code"],
-                "severity": f["severity"],
-                "title": f["title"],
-                "explanation": f["explanation"],
-                "source_refs": [r["id"] for r in f.get("source_refs", [])],
-            }
-            for f in findings
-        ],
+        "findings": cleaned_findings,
     }
     return json.dumps(payload, ensure_ascii=False)
 
 
-def _fallback_report(event: dict, totals: dict, findings: list[dict]) -> dict:
-    """Generate a deterministic fallback report without AI."""
+def _fallback_report(event: dict, totals: dict, findings: list[dict], rates: dict | None = None) -> dict:
+    """Generate a clean fallback report without AI."""
     high = [f for f in findings if f.get("severity") == "high"]
     medium = [f for f in findings if f.get("severity") == "medium"]
     low = [f for f in findings if f.get("severity") == "low"]
 
+    cur = event.get("currency", "USD").upper()
     budget = totals.get("budget_paise", 0)
     spent = totals.get("expense_total_paise", 0)
     committed = totals.get("sponsor_committed_paise", 0)
@@ -78,9 +126,9 @@ def _fallback_report(event: dict, totals: dict, findings: list[dict]) -> dict:
 
     summary_parts = [
         f"This is an automated closeout summary for '{event.get('name', 'Event')}'. ",
-        f"Recorded expenses total ₹{spent/100:,.2f} against a budget of ₹{budget/100:,.2f}. ",
-        f"Sponsor commitments: ₹{committed/100:,.2f} committed, ₹{received/100:,.2f} received. ",
-        f"The audit found {len(findings)} finding(s): {len(high)} high, {len(medium)} medium, {len(low)} low severity.",
+        f"Recorded expenses total {format_currency_amount(spent, cur, rates)} against an allocated budget of {format_currency_amount(budget, cur, rates)}. ",
+        f"Sponsorship commitments: {format_currency_amount(committed, cur, rates)} pledged, with {format_currency_amount(received, cur, rates)} received to date. ",
+        f"The review identified {len(findings)} item(s) for attention: {len(high)} high, {len(medium)} medium, and {len(low)} low priority.",
     ]
 
     priorities = []
@@ -100,9 +148,8 @@ def _fallback_report(event: dict, totals: dict, findings: list[dict]) -> dict:
     ]
 
     limitations = [
-        "This report was generated by deterministic rules without AI assistance.",
-        "The AI report generation was unavailable or returned an invalid response.",
-        "All financial figures are from recorded data and have not been independently audited.",
+        "This summary was created from deterministic system records without active AI commentary.",
+        "All financial figures reflect recorded ledger transactions and should be checked against bank statements.",
     ]
 
     return {
@@ -113,6 +160,47 @@ def _fallback_report(event: dict, totals: dict, findings: list[dict]) -> dict:
     }
 
 
+def sanitize_ai_text(text: str, currency: str = "USD") -> str:
+    """Ensure any accidental sub-unit / paise or rupee mentions are cleanly converted to display currency."""
+    if not text:
+        return text
+    import re
+    cur = currency.upper() if currency else "USD"
+    sym = CURRENCY_SYMBOLS.get(cur, f"{cur} ")
+    inr_rate = FALLBACK_USD_RATES.get("INR", 86.50)
+    target_rate = FALLBACK_USD_RATES.get(cur, 1.0)
+
+    def _rep_paise(match):
+        raw_num = match.group(1).replace(",", "")
+        try:
+            inr_val = float(raw_num) / 100.0
+            val = (inr_val / inr_rate) * target_rate
+            return f"{sym}{val:,.2f}"
+        except Exception:
+            return match.group(0)
+
+    # Convert "2,500,000 paise" or "2500000 paise"
+    res = re.sub(r'([\d,]+)\s*(?:paise|paise\b)', _rep_paise, text, flags=re.IGNORECASE)
+
+    # Convert any "₹25,000.00" or "INR 25,000" if target currency is not INR
+    if cur != "INR":
+        def _rep_inr(match):
+            raw_num = match.group(1).replace(",", "")
+            try:
+                inr_val = float(raw_num)
+                val = (inr_val / inr_rate) * target_rate
+                return f"{sym}{val:,.2f}"
+            except Exception:
+                return match.group(0)
+
+        res = re.sub(r'(?:₹|INR\s*|Rs\.?\s*)([\d,]+(?:\.\d{1,2})?)', _rep_inr, res, flags=re.IGNORECASE)
+
+    # Clean any leftover bare mentions
+    unit_word = "cents" if cur in ("USD", "EUR", "CAD", "AUD") else "sub-units"
+    res = re.sub(r'\bpaise\b', unit_word, res, flags=re.IGNORECASE)
+    return res
+
+
 async def generate_report(
     event: dict,
     totals: dict,
@@ -121,38 +209,67 @@ async def generate_report(
     """
     Returns (report_data_dict, ai_status) where ai_status is 'ai_generated' or 'fallback'.
     """
+    cur = event.get("currency", "USD").upper()
+    from app.services.exchange_rates import get_exchange_rates
+    rates_data = await get_exchange_rates()
+    rates = rates_data.get("rates", FALLBACK_USD_RATES)
+
     if not settings.gemini_api_key:
         logger.warning("GEMINI_API_KEY not set; using fallback report")
-        return _fallback_report(event, totals, findings), "fallback"
+        return _fallback_report(event, totals, findings, rates), "fallback"
 
     try:
         from google import genai
         from google.genai import types
 
         client = genai.Client(api_key=settings.gemini_api_key)
-        payload = _build_payload(event, totals, findings)
+        payload = _build_payload(event, totals, findings, rates)
 
         response = client.models.generate_content(
             model=settings.gemma_model,
             contents=payload,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT,
-                max_output_tokens=2048,
+                max_output_tokens=8192,
                 temperature=0.2,
             ),
         )
 
-        raw_text = response.text or ""
+        raw = ""
+        if response.candidates and response.candidates[0].content:
+            for p in response.candidates[0].content.parts or []:
+                if not getattr(p, "thought", False) and p.text:
+                    raw = p.text
+                    break
+        if not raw:
+            raw = response.text or ""
+
         # Strip markdown code fences if present
-        text = raw_text.strip()
+        text = raw.strip()
         if text.startswith("```"):
             lines = text.split("\n")
             text = "\n".join(lines[1:-1]) if len(lines) > 2 else text
+        if text.startswith("json"):
+            text = text[4:].strip()
 
         data = json.loads(text)
+        if isinstance(data, list) and len(data) > 0:
+            data = data[0]
+
         validated = GemmaReportSchema(**data)
-        return validated.model_dump(), "ai_generated"
+        out = validated.model_dump()
+        
+        # Sanitize any accidental subunit mentions in AI output
+        if out.get("executive_summary"):
+            out["executive_summary"] = sanitize_ai_text(out["executive_summary"], cur)
+        for p in out.get("priorities", []):
+            if p.get("why_it_matters"):
+                p["why_it_matters"] = sanitize_ai_text(p["why_it_matters"], cur)
+            if p.get("recommended_next_step"):
+                p["recommended_next_step"] = sanitize_ai_text(p["recommended_next_step"], cur)
+        return out, "ai_generated"
 
     except Exception as exc:
         logger.error("Gemma report generation failed: %s", exc)
-        return _fallback_report(event, totals, findings), "fallback"
+        return _fallback_report(event, totals, findings, rates), "fallback"
+

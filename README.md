@@ -1,17 +1,22 @@
-# SponsorLedger — Evidence-Linked AI Financial Auditor for Events
-
-> **An evidence-linked event finance and sponsorship auditor.**
-> Reconcile event budgets, sponsor commitments, deliverables, and expenses with pure Python deterministic rules, live multi-currency exchange via `forex-python`, and Gemma narrative closeout reporting.
-
-[![CI](https://github.com/diptodeepb/SponsorLedger/actions/workflows/ci.yml/badge.svg)](https://github.com/diptodeepb/SponsorLedger/actions/workflows/ci.yml)
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
-[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev)
-[![Vite](https://img.shields.io/badge/Vite-8-646cff.svg)](https://vitejs.dev)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38bdf8.svg)](https://tailwindcss.com)
-[![MongoDB Atlas](https://img.shields.io/badge/MongoDB-Atlas_Free-green.svg)](https://www.mongodb.com/atlas)
-[![Gemma](https://img.shields.io/badge/AI-Gemma_via_Gemini-purple.svg)](https://ai.google.dev/gemma)
+<div align="center">
+  <img src="frontend/public/favicon.svg" alt="SponsorLedger Logo" width="128" height="128" />
+  <h1>SponsorLedger</h1>
+  <p>
+    <strong>Evidence-Linked Financial Auditing & Automated Sponsorship Accounting for Events.</strong><br />
+    Track budgets, reconcile sponsor commitments vs. received funds, audit deliverables, and generate Gemma-synthesized closeout briefings.
+  </p>
+  <p>
+    <a href="https://github.com/diptodeepb/SponsorLedger/actions/workflows/ci.yml"><img src="https://github.com/diptodeepb/SponsorLedger/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL_v3-blue.svg" alt="License: AGPL v3" /></a>
+    <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.12+-blue.svg" alt="Python 3.12+" /></a>
+    <a href="https://fastapi.tiangolo.com"><img src="https://img.shields.io/badge/FastAPI-0.115+-009688.svg" alt="FastAPI" /></a>
+    <a href="https://react.dev"><img src="https://img.shields.io/badge/React-19-61dafb.svg" alt="React 19" /></a>
+    <a href="https://vitejs.dev"><img src="https://img.shields.io/badge/Vite-8-646cff.svg" alt="Vite 8" /></a>
+    <a href="https://tailwindcss.com"><img src="https://img.shields.io/badge/Tailwind-4-38bdf8.svg" alt="Tailwind CSS 4" /></a>
+    <a href="https://www.mongodb.com/atlas"><img src="https://img.shields.io/badge/MongoDB-Atlas_Free-green.svg" alt="MongoDB Atlas" /></a>
+    <a href="https://ai.google.dev/gemma"><img src="https://img.shields.io/badge/AI-Gemma_via_Gemini-purple.svg" alt="Gemma AI" /></a>
+  </p>
+</div>
 
 ---
 
@@ -19,6 +24,7 @@
 
 - [Why SponsorLedger?](#why-sponsorledger)
 - [Core Capabilities](#core-capabilities)
+- [Modern Design &amp; UX](#modern-design--ux)
 - [Multi-Currency &amp; Live FX Engine](#multi-currency--live-fx-engine)
 - [Architecture &amp; Data Flow](#architecture--data-flow)
 - [Audit Rules &amp; Financial Guardrails](#audit-rules--financial-guardrails)
@@ -36,26 +42,39 @@
 
 ## 🌟 Why SponsorLedger?
 
-Running a hackathon, student conference, or community summit is exhilarating, but closing the books afterward is often stressful:
+Running a hackathon, student conference, or community summit is exciting, but wrapping up finances afterward is often messy:
 
-- Sponsor commitments live in personal spreadsheets and scattered messaging threads.
-- Deliverables (stage mentions, logo placements, booth space) are agreed upon over email and easily forgotten on the day of the event.
-- Organizers pay out-of-pocket for last-minute supplies, leaving a paper trail of crumpled paper slips and digital receipts.
-- Weeks after the venue empties, organizers struggle to answer: _Did we stay within budget? Did every sponsor transfer their pledged amount? Were all deliverables fulfilled before we close the fiscal year?_
+- Sponsor commitments get lost in private notes and chat messages.
+- Deliverables (stage mentions, logo placements, booth space) are agreed upon quickly and forgotten during event operations.
+- Organizers pay out-of-pocket for last-minute supplies, leaving scattered receipts.
+- Weeks after the event, organizers struggle to confirm: _Did we stay within budget? Did every sponsor transfer their pledged amount? Were all deliverables fulfilled?_
 
-**SponsorLedger** was built from firsthand event organizing experience. It pairs an **audit-first deterministic rule engine** with a **live multi-currency presentation layer** and **Gemma narrative synthesis**, giving organizing teams total financial clarity without spreadsheet chaos.
+**SponsorLedger** is designed to solve this directly. It combines **clear audit checks** with **live multi-currency conversion** and **Gemma narrative summaries**, giving organizing teams calm and reliable books.
 
 ---
 
 ## ⚡ Core Capabilities
 
-- **Deterministic Rule Engine**: Pure Python inspects transactions, unpaid balances, overdue sponsor deliverables, missing receipt numbers, and candidate duplicate expenses without fuzzy guesswork.
-- **Exact Integer Base Unit Arithmetic**: All canonical values are stored and calculated in exact integer units (`paise`), completely eliminating IEEE 754 floating-point rounding errors ($0.1 + 0.2 \neq 0.3$).
-- **Multi-Currency Swapping**: View and input figures in **USD** (default), **INR**, **EUR**, **GBP**, **JPY**, **CAD**, **AUD**, **CHF**, or **SGD** with live exchange rates powered by `forex-python`.
-- **Evidence-Linked Traceability**: Every audit finding links directly to the specific expense, sponsor, or deliverable records that triggered it. Inspect receipts, notes, and contacts directly inside the UI.
-- **Narrative Closeout Reporting**: Google Gemma synthesizes verified audit numbers into executive briefings, prioritized remediation steps, and closing checklists. Crucially, the AI is constrained by schema and system prompt to never compute or invent numbers.
-- **Deterministic Offline Fallback**: If the AI quota is exhausted or an API key is not configured, the system falls back to a clean deterministic report template with zero downtime.
-- **Batch CSV Ingestion**: Upload bank or credit card CSV statements with real-time validation, duplicate detection, and format preview before confirming.
+- **Automated Financial Checks**: Python rules inspect transactions, unpaid sponsor balances, overdue promises, missing receipts, and potential duplicate expenses.
+- **Accurate Currency Calculations**: All figures are stored in base integer units to prevent floating-point calculation errors when adding and converting currencies.
+- **Multi-Currency Support**: View and input amounts in **USD** (default), **INR**, **EUR**, **GBP**, **JPY**, **CAD**, **AUD**, **CHF**, or **SGD** with live exchange rates.
+- **Evidence-Linked Records**: Every audit finding links directly to the specific expense, sponsor, or deliverable item that triggered it.
+- **Human-Readable Closeout Reports**: Google Gemma reviews verified numbers to draft executive summaries, recommended next steps, and wrap-up checklists without altering figures.
+- **Reliable Offline Fallback**: If AI access is unavailable or an API key is not set, a clean structured summary report is generated instantly.
+- **CSV Import**: Upload bank or card statements with instant preview, duplicate warnings, and formatting validation before importing.
+
+---
+
+## 🎨 Modern Design & UX
+
+SponsorLedger is built with modern, state-of-the-art UI craftsmanship:
+
+- **PermLens-Style Desktop Sidebar**: Smoothly collapses from full navigation (`w-64`) to a compact icon-only rail (`w-20`) with left active indicator pills, micro-interaction hover scaling, and floating tooltips, persisted via `localStorage`.
+- **Mobile Responsive Drawer**: Drawer navigation with backdrop blur and touch-friendly controls tailored for smartphones and tablets.
+- **Dynamic Sticky Top Navbar**: Floating header with an ambient gradient hairline and subtle indigo luminescence, remaining dynamically accessible across all page scroll positions.
+- **Theme-Adapted Custom Scrollbars**: Inset pill-shaped scrollbars that dynamically adapt between dark and light modes.
+- **View Transitions & Dark Mode**: Seamless circular ripple transition when switching between dark slate and light themes.
+- **Responsive Financial Charts**: Recharts visualizations with adaptive tick formatting that prevent text overlapping on small screens while retaining detailed hover tooltips.
 
 ---
 
@@ -68,12 +87,13 @@ SponsorLedger provides first-class currency support across both backend APIs and
 - **Live Exchange Rates via `forex-python`**:
   - The backend service leverages `forex-python` (`CurrencyRates` and `CurrencyCodes`) wrapped asynchronously via `asyncio.to_thread` to ensure non-blocking I/O.
   - In-memory rate caching (`CACHE_TTL_SECONDS = 3600`) avoids redundant requests, backed by offline fallback rates for maximum reliability.
+
 - **Database Safety & Symmetric Consistency**:
   - Monetary amounts in MongoDB remain stored in canonical integer units. The database schema never suffers floating-point corruption or migration headaches.
   - Conversions between display currencies and stored units are mathematically symmetric and reversible:
 
     $$
-    \text{Target Amount} = \left(\frac{\text{paise}}{100 \times \text{rates}[\text{"INR"}]}\right) \times \text{rates}[\text{Target}]
+    \text{Target Amount} = \left(\frac{\text{base\_units}}{100 \times \text{rates}[\text{"INR"}]}\right) \times \text{rates}[\text{Target}]
     $$
 
     $$
@@ -246,7 +266,7 @@ pytest tests/ -v
 ============================== 59 passed in 5.46s ==============================
 ```
 
-- `tests/test_money.py`: Exact paise parsing and absence of floating-point inaccuracies.
+- `tests/test_money.py`: Exact monetary parsing and absence of floating-point inaccuracies.
 - `tests/test_csv_import.py`: Header normalisation, size limits, negative amounts, and duplicate detection.
 - `tests/test_audit_rules.py`: Deterministic evaluation across all 7 audit rules and boundary conditions.
 - `tests/test_currencies.py`: `forex-python` rate fetching, conversion round-trips, symbol lookups, and API endpoints.
